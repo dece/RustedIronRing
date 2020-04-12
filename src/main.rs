@@ -1,11 +1,13 @@
-extern crate clap;
-
 use std::fs::File;
-use std::io::{BufReader, Error, Read};
+use std::io::{Error, Read};
 
-//use std::path::Path;
-
+extern crate clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+
+mod parsers {
+    pub mod bhd;
+}
+use parsers::*;
 
 fn main() {
     let matches = App::new("Rusted Iron Ring")
@@ -34,11 +36,10 @@ fn cmd_bhd(args: &ArgMatches) -> Result::<(), Error> {
     println!("File: {:?}", filepath);
     println!("Output: {:?}", outputpath);
 
-    let bhd_data: File = File::open(filepath)?;
-    let mut bhd_reader = BufReader::new(bhd_data);
-    let mut magic: [u8; 4] = [0; 4];
-    bhd_reader.read(&mut magic)?;
+    let mut bhd_file: File = File::open(filepath)?;
+    let mut bhd_data = vec![0u8; bhd_file.metadata()?.len() as usize];
+    bhd_file.read_to_end(&mut bhd_data)?;
 
-    println!("First byte: 0x{:X}", magic[0]);
+    bhd::parse(&bhd_data);
     Ok(())
 }
