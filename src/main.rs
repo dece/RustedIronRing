@@ -1,8 +1,13 @@
+use std::env::current_exe;
 use std::fs::File;
 use std::io::{Error, Read};
+use std::path::{Path, PathBuf};
 
-extern crate clap;
+//extern crate clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+
+//extern crate nom;
+use nom::Err::{Error as NomError, Failure as NomFailure};
 
 mod parsers {
     pub mod bhd;
@@ -21,7 +26,12 @@ fn main() {
                 .short("o")
                 .long("output")
                 .takes_value(true)
-                .required(true)))
+                .required(true))
+            .arg(Arg::with_name("namefile")
+                .short("n")
+                .long("names")
+                .takes_value(true)
+                .required(false)))
         .get_matches();
 
     match matches.subcommand() {
@@ -33,13 +43,31 @@ fn main() {
 fn cmd_bhd(args: &ArgMatches) -> Result::<(), Error> {
     let filepath: &str = args.value_of("file").unwrap();
     let outputpath: &str = args.value_of("output").unwrap();
-    println!("File: {:?}", filepath);
-    println!("Output: {:?}", outputpath);
-
+    let namefilepath: &str = args.value_of("namefile").unwrap_or(&get_default_namefilepath());
     let mut bhd_file: File = File::open(filepath)?;
-    let mut bhd_data = vec![0u8; bhd_file.metadata()?.len() as usize];
-    bhd_file.read_to_end(&mut bhd_data)?;
+    let file_len = bhd_file.metadata()?.len() as usize;
+    let mut bhd_data = vec![0u8; file_len];
+    bhd_file.read_exact(&mut bhd_data)?;
 
-    bhd::parse(&bhd_data);
+    let bhd = match bhd::parse(&bhd_data) {
+        Ok((_, bhd)) => { println!("BHD: {:?}", bhd); bhd }
+        Err(NomError(e)) | Err(NomFailure(e)) => {
+            let (_, kind) = e;
+            let reason = format!("{:?} {:?}", kind, kind.description());
+            eprintln!("BHD parsing failed: {}", reason); return Ok(())
+        }
+        e => {
+            eprintln!("Unknown error: {:?}", e); return Ok(())
+        }
+    };
+
     Ok(())
+}
+
+fn get_default_namefilepath() -> String {
+    let programpath: PathBuf = current_exe().unwrap();
+    let programdir: &Path = programpath.parent().unwrap();
+    let mut namefilepath: PathBuf = PathBuf::from(programdir);
+    namefilepath.push("res/namefile.json");
+    String::from(namefilepath.to_str().unwrap())
 }
