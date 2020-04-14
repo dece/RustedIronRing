@@ -36,7 +36,6 @@ pub fn load_name_map(path: &str) -> Result<HashMap<String, String>, Error> {
             names.insert(hash.to_string(), name[2..].to_string());
         }
     }
-    println!("{:?}", names);
     Ok(names)
 }
 
