@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::fs::File;
+
 extern crate nom;
 use nom::{IResult};
 use nom::combinator::verify;
@@ -78,7 +81,6 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Bhd> {
 
     let mut buckets: Vec<Vec<BhdFile>> = vec!();
     for b in 0..header.num_buckets {
-        println!("Bucket {}", b);
         let bucket_info = &bucket_infos[b as usize];
         let bucket_data = &full_file[bucket_info.offset as usize..];
         let (_, bucket) = count(parse_file, bucket_info.count as usize)(bucket_data)?;
@@ -89,7 +91,6 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Bhd> {
 }
 
 /// Extract files from a BHD/BDT pair.
-pub fn extract(bhd: Bhd, bdt_path: &str) {
-
+pub fn extract(bhd: &Bhd, bdt_file: &File, names: &HashMap<String, String>, outputpath: &str) {
+    // TODO
 }
-
