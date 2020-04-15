@@ -1,19 +1,20 @@
-use std::env::current_exe;
-use std::fs::File;
-use std::io::{Error, Read};
-use std::path::{Path, PathBuf};
+use std::env;
+use std::fs;
+use std::path;
+use std::process;
 
-//extern crate clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-
-//extern crate nom;
-use nom::Err::{Error as NomError, Failure as NomFailure};
 
 mod name_hashes;
 mod parsers {
     pub mod bhd;
 }
-use parsers::*;
+mod unpackers {
+    pub mod bhd;
+}
+mod utils {
+    pub mod fs;
+}
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
@@ -35,49 +36,87 @@ fn main() {
                 .takes_value(true)
                 .required(false)
                 .default_value(default_namefilepath)))
+        .subcommand(SubCommand::with_name("bhds")
+            .about("Extracts all BHD/BDT content (alphabetically) in a folder")
+            .arg(Arg::with_name("folder")
+                .takes_value(true)
+                .required(true))
+            .arg(Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .takes_value(true)
+                .required(true))
+            .arg(Arg::with_name("namefile")
+                .short("n")
+                .long("names")
+                .takes_value(true)
+                .required(false)
+                .default_value(default_namefilepath)))
         .get_matches();
 
-    match matches.subcommand() {
-        ("bhd", Some(s)) => { cmd_bhd(s).unwrap(); }
-        _ => {}
-    }
+    process::exit(match matches.subcommand() {
+        ("bhd", Some(s)) => { cmd_bhd(s) }
+        ("bhds", Some(s)) => { cmd_bhds(s) }
+        _ => { 0 }
+    })
 }
 
 fn get_default_namefilepath() -> String {
-    let programpath: PathBuf = current_exe().unwrap();
-    let programdir: &Path = programpath.parent().unwrap();
-    let mut namefilepath: PathBuf = PathBuf::from(programdir);
-    namefilepath.push("res/namefile.json");
-    String::from(namefilepath.to_str().unwrap())
+    let program_path: path::PathBuf = env::current_exe().unwrap();
+    let program_dir: &path::Path = program_path.parent().unwrap();
+    let mut namefile_path: path::PathBuf = path::PathBuf::from(program_dir);
+    namefile_path.push("res/namefile.json");
+    String::from(namefile_path.to_str().unwrap())
 }
 
-fn cmd_bhd(args: &ArgMatches) -> Result::<(), Error> {
-    let filepath: &str = args.value_of("file").unwrap();
-    let outputpath: &str = args.value_of("output").unwrap();
-    let namefilepath: &str = args.value_of("namefile").unwrap();
-    let mut bhd_file = File::open(filepath)?;
-    let file_len = bhd_file.metadata()?.len() as usize;
-    let mut bhd_data = vec![0u8; file_len];
-    bhd_file.read_exact(&mut bhd_data)?;
+fn cmd_bhd(args: &ArgMatches) -> i32 {
+    let file_path: &str = args.value_of("file").unwrap();
+    let output_path: &str = args.value_of("output").unwrap();
 
-    let bhd = match bhd::parse(&bhd_data) {
-        Ok((_, bhd)) => { bhd }
-        Err(NomError(e)) | Err(NomFailure(e)) => {
-            let (_, kind) = e;
-            let reason = format!("{:?} {:?}", kind, kind.description());
-            eprintln!("BHD parsing failed: {}", reason); return Ok(())
-        }
-        e => {
-            eprintln!("Unknown error: {:?}", e); return Ok(())
-        }
+    let namefile_path: &str = args.value_of("namefile").unwrap();
+    let names = match name_hashes::load_name_map(namefile_path) {
+        Ok(n) => { n }
+        Err(e) => { eprintln!("Failed to load namefile: {:?}", e); return 1 }
     };
 
-    let names = name_hashes::load_name_map(&namefilepath)?;
+    return match unpackers::bhd::extract_bhd(file_path, &names, output_path) {
+        Err(e) => { eprintln!("Failed to extract BHD: {:?}", e); 1 }
+        _ => { 0 }
+    }
+}
 
-    let bdt_filepath = PathBuf::from(filepath).with_extension("bdt");
-    let bdt_file = File::open(bdt_filepath.to_str().unwrap())?;
+fn cmd_bhds(args: &ArgMatches) -> i32 {
+    let folder_path: &str = args.value_of("folder").unwrap();
+    let output_path: &str = args.value_of("output").unwrap();
 
-    bhd::extract(&bhd, &bdt_file, &names, &outputpath);
+    let namefile_path: &str = args.value_of("namefile").unwrap();
+    let names = match name_hashes::load_name_map(namefile_path) {
+        Ok(n) => { n }
+        Err(e) => { eprintln!("Failed to load namefile: {:?}", e); return 1 }
+    };
 
-    Ok(())
+    let entries = match fs::read_dir(folder_path) {
+        Ok(o) => { o }
+        Err(e) => { eprintln!("Cannot read folder content: {:?}", e); return 1 }
+    };
+    let mut bhd_paths = vec!();
+    for entry in entries {
+        if !entry.is_ok() {
+            continue
+        }
+        let path = entry.unwrap().path();
+        match path.extension() {
+            Some(e) => { if e == "bhd5" { bhd_paths.push(path); } }
+            _ => {}
+        }
+    }
+    bhd_paths.sort();
+
+    for bhd_path in bhd_paths {
+        match unpackers::bhd::extract_bhd(bhd_path.to_str().unwrap(), &names, output_path) {
+            Err(e) => { eprintln!("Failed to extract BHD: {:?}", e); return 1 }
+            _ => {}
+        }
+    }
+    return 0
 }

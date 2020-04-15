@@ -2,12 +2,11 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Error};
 
-extern crate num_bigint;
 use num_bigint::BigUint;
-extern crate num_traits;
 use num_traits::identities::Zero;
 
 /// Compute the weird hash for a string. Same mechanic since DeS.
+#[allow(dead_code)]
 pub fn hash(s: &str) -> u32 {
     let s = s.to_lowercase();
     let mut val = BigUint::zero();

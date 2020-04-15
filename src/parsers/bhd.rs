@@ -1,8 +1,3 @@
-use std::collections::HashMap;
-use std::fs;
-use std::io;
-
-extern crate nom;
 use nom::combinator::verify;
 use nom::multi::count;
 use nom::number::complete::*;
@@ -101,15 +96,4 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Bhd> {
             buckets,
         },
     ))
-}
-
-/// Extract files from a BHD/BDT pair.
-pub fn extract(
-    bhd: &Bhd,
-    bdt_file: &fs::File,
-    names: &HashMap<String, String>,
-    outputpath: &str,
-) -> Result<(), io::Error> {
-    fs::create_dir(outputpath)?;
-    Ok(())
 }
