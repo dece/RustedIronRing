@@ -52,11 +52,17 @@ fn main() {
                 .takes_value(true)
                 .required(false)
                 .default_value(default_namefilepath)))
+        .subcommand(SubCommand::with_name("hash")
+            .about("Calculate hash for a string")
+            .arg(Arg::with_name("value")
+                .takes_value(true)
+                .required(true)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
         ("bhd", Some(s)) => { cmd_bhd(s) }
         ("bhds", Some(s)) => { cmd_bhds(s) }
+        ("hash", Some(s)) => { cmd_hash(s) }
         _ => { 0 }
     })
 }
@@ -113,10 +119,17 @@ fn cmd_bhds(args: &ArgMatches) -> i32 {
     bhd_paths.sort();
 
     for bhd_path in bhd_paths {
+        println!("Extracting {:?}", bhd_path);
         match unpackers::bhd::extract_bhd(bhd_path.to_str().unwrap(), &names, output_path) {
             Err(e) => { eprintln!("Failed to extract BHD: {:?}", e); return 1 }
             _ => {}
         }
     }
     return 0
+}
+
+fn cmd_hash(args: &ArgMatches) -> i32 {
+    let value: &str = args.value_of("value").unwrap();
+    println!("{}", name_hashes::hash_as_string(name_hashes::hash(&value)));
+    0
 }

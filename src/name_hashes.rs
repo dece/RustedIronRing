@@ -6,7 +6,6 @@ use num_bigint::BigUint;
 use num_traits::identities::Zero;
 
 /// Compute the weird hash for a string. Same mechanic since DeS.
-#[allow(dead_code)]
 pub fn hash(s: &str) -> u32 {
     let s = s.to_lowercase();
     let mut val = BigUint::zero();
