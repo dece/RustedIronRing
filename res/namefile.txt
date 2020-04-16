@@ -2433,6 +2433,10 @@ FB7C5EA8: /sfx/FRPG_SfxBnd_m16.ffxbnd.dcx
 C6614122: /sfx/FRPG_SfxBnd_m18.ffxbnd.dcx
 EB8E97E1: /sfx/FRPG_SfxBnd_m18_00.ffxbnd.dcx
 5101091E: /sfx/FRPG_SfxBnd_m18_01.ffxbnd.dcx
+FB7A26BA: /sfx/FRPG_SfxBnd_c3471.ffxbnd.dcx
+153029D0: /sfx/FRPG_SfxBnd_c4100.ffxbnd.dcx
+192E66A4: /sfx/FRPG_SfxBnd_c4500.ffxbnd.dcx
+C2B8C475: /sfx/FRPG_SfxBnd_c4510.ffxbnd.dcx
 584A66E3: /facegen/FaceGen.fgbnd
 4542EA34: /font/DbgFont14h.ccm.dcx
 A20205C7: /font/DbgFont14h.tpf.dcx
