@@ -1,12 +1,12 @@
-use nom::combinator::verify;
+use nom::IResult;
+use nom::bytes::complete::tag;
 use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
-use nom::IResult;
 
 #[derive(Debug)]
 pub struct BhdHeader {
-    pub magic: u32,
+    pub magic: Vec<u8>,
     pub unk04: i8, // PC=0, PS3=-1
     pub unk05: i8,
     pub unk06: i8,
@@ -21,7 +21,7 @@ const MAGIC: u32 = 0x35444842;
 
 fn parse_header(i: &[u8]) -> IResult<&[u8], BhdHeader> {
     let (i, (magic, flags, unk08, file_len, num_buckets, ofs_buckets)) = tuple((
-        verify(le_u32, |m| *m == MAGIC),
+        tag(b"BHD5"),
         count(le_i8, 4),
         le_u32,
         le_u32,
@@ -31,7 +31,7 @@ fn parse_header(i: &[u8]) -> IResult<&[u8], BhdHeader> {
     Ok((
         i,
         BhdHeader {
-            magic,
+            magic: magic.to_vec(),
             unk04: flags[0],
             unk05: flags[1],
             unk06: flags[2],

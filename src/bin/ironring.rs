@@ -48,12 +48,18 @@ fn main() {
             .arg(Arg::with_name("value")
                 .takes_value(true)
                 .required(true)))
+        .subcommand(SubCommand::with_name("dcx")
+            .about("?TODO?")
+            .arg(Arg::with_name("file")
+                .takes_value(true)
+                .required(true)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
         ("bhd", Some(s)) => { cmd_bhd(s) }
         ("bhds", Some(s)) => { cmd_bhds(s) }
         ("hash", Some(s)) => { cmd_hash(s) }
+        ("dcx", Some(s)) => { cmd_dcx(s) }
         _ => { 0 }
     })
 }
@@ -123,4 +129,12 @@ fn cmd_hash(args: &ArgMatches) -> i32 {
     let value: &str = args.value_of("value").unwrap();
     println!("{}", name_hashes::hash_as_string(name_hashes::hash(&value)));
     0
+}
+
+fn cmd_dcx(args: &ArgMatches) -> i32 {
+    let file_path: &str = args.value_of("file").unwrap();
+    match unpackers::dcx::extract_dcx(file_path) {
+        Err(e) => { eprintln!("Failed to extract DCX: {:?}", e); return 1 }
+        _ => { 0 }
+    }
 }
