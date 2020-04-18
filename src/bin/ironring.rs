@@ -5,16 +5,7 @@ use std::process;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
-mod name_hashes;
-mod parsers {
-    pub mod bhd;
-}
-mod unpackers {
-    pub mod bhd;
-}
-mod utils {
-    pub mod fs;
-}
+use rir::{name_hashes, unpackers};
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
