@@ -7,6 +7,7 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::name_hashes;
 use crate::parsers::bhd;
+use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 use crate::utils::fs as fs_utils;
 
 /// Parse a BHD file and extract its content.
@@ -14,7 +15,7 @@ pub fn extract_bhd(
     bhd_path: &str,
     names: &HashMap<String, String>,
     output_path: &str
-) -> Result<(), io::Error> {
+) -> Result<(), UnpackError> {
     let mut bhd_file = fs::File::open(bhd_path)?;
     let file_len = bhd_file.metadata()?.len() as usize;
     let mut bhd_data = vec![0u8; file_len];
@@ -22,12 +23,11 @@ pub fn extract_bhd(
     let bhd = match bhd::parse(&bhd_data) {
         Ok((_, bhd)) => { bhd }
         Err(NomError(e)) | Err(NomFailure(e)) => {
-            let (_, kind) = e;
-            let reason = format!("{:?} {:?}", kind, kind.description());
-            eprintln!("BHD parsing failed: {}", reason); return Ok(())
+            let reason = unpackers_errors::get_nom_error_reason(e.1);
+            return Err(UnpackError::Parsing("BHD parsing failed: ".to_owned() + &reason))
         }
         e => {
-            eprintln!("Unknown error: {:?}", e); return Ok(())
+            return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
         }
     };
 

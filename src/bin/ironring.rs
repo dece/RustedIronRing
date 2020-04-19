@@ -52,7 +52,10 @@ fn main() {
             .about("?TODO?")
             .arg(Arg::with_name("file")
                 .takes_value(true)
-                .required(true)))
+                .required(true))
+            .arg(Arg::with_name("output")
+                .takes_value(true)
+                .required(false)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -108,18 +111,21 @@ fn cmd_bhds(args: &ArgMatches) -> i32 {
             continue
         }
         let path = entry.unwrap().path();
-        match path.extension() {
-            Some(e) => { if e == "bhd5" { bhd_paths.push(path); } }
-            _ => {}
+        if let Some(e) = path.extension() {
+            if e == "bhd5" {
+                bhd_paths.push(path);
+            }
         }
     }
     bhd_paths.sort();
 
     for bhd_path in bhd_paths {
         println!("Extracting {:?}", bhd_path);
-        match unpackers::bhd::extract_bhd(bhd_path.to_str().unwrap(), &names, output_path) {
-            Err(e) => { eprintln!("Failed to extract BHD: {:?}", e); return 1 }
-            _ => {}
+        if let Some(path_str) = bhd_path.to_str() {
+            if let Err(e) = unpackers::bhd::extract_bhd(path_str, &names, output_path) {
+                eprintln!("Failed to extract BHD: {:?}", e);
+                return 1
+            }
         }
     }
     return 0
@@ -133,7 +139,23 @@ fn cmd_hash(args: &ArgMatches) -> i32 {
 
 fn cmd_dcx(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
-    match unpackers::dcx::extract_dcx(file_path) {
+    let mut output_path: String = match args.value_of("output") {
+        Some(s) => { s.to_string() }
+        _ => { String::with_capacity(file_path.len()) }
+    };
+    if output_path.is_empty() {
+        let mut pb = path::PathBuf::from(&file_path);
+        pb.set_extension("");
+        if let Some(s) = pb.to_str() {
+            output_path.push_str(s);
+        } else {
+            eprintln!("Could not create an uncompressed path for {}. \
+                       Provide one as \"output\" argument.", file_path);
+            return 1
+        }
+    }
+
+    match unpackers::dcx::extract_dcx(file_path, &output_path) {
         Err(e) => { eprintln!("Failed to extract DCX: {:?}", e); return 1 }
         _ => { 0 }
     }
