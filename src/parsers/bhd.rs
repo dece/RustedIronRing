@@ -17,17 +17,9 @@ pub struct BhdHeader {
     pub ofs_buckets: u32,
 }
 
-const MAGIC: u32 = 0x35444842;
-
 fn parse_header(i: &[u8]) -> IResult<&[u8], BhdHeader> {
-    let (i, (magic, flags, unk08, file_len, num_buckets, ofs_buckets)) = tuple((
-        tag(b"BHD5"),
-        count(le_i8, 4),
-        le_u32,
-        le_u32,
-        le_u32,
-        le_u32,
-    ))(i)?;
+    let (i, (magic, flags, unk08, file_len, num_buckets, ofs_buckets)) =
+        tuple((tag(b"BHD5"), count(le_i8, 4), le_u32, le_u32, le_u32, le_u32))(i)?;
     Ok((
         i,
         BhdHeader {
@@ -40,7 +32,7 @@ fn parse_header(i: &[u8]) -> IResult<&[u8], BhdHeader> {
             file_len,
             num_buckets,
             ofs_buckets,
-        },
+        }
     ))
 }
 

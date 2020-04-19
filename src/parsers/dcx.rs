@@ -45,6 +45,7 @@
 
 use nom::IResult;
 use nom::bytes::complete::tag;
+use nom::choice::alt;
 use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
@@ -59,38 +60,69 @@ pub struct DcxHeader {
     pub unk14: u32,
 }
 
-const HEADER_MAGIC: u32 = 0x00504344;
-
 fn parse_header(i: &[u8]) -> IResult<&[u8], DcxHeader> {
-    let (i, (magic, unk04, ofs_dcs, ofs_dcp, unk10, unk14)) = tuple((
-        tag(b"DCX\0"),
-        be_u32,
-        be_u32,
-        be_u32,
-        be_u32,
-        be_u32,
-    ))(i)?;
+    let (i, (magic, unk04, ofs_dcs, ofs_dcp, unk10, unk14)) =
+        tuple((tag(b"DCX\0"), be_u32, be_u32, be_u32, be_u32, be_u32))(i)?;
     Ok((i, DcxHeader { magic: magic.to_vec(), unk04, ofs_dcs, ofs_dcp, unk10, unk14 }))
 }
 
 #[derive(Debug)]
 pub struct DcxSizes {
-    pub magic: u32,
+    pub magic: Vec<u8>,
     pub uncompressed_size: u32,
     pub compressed_size: u32,
+}
+
+fn parse_sizes(i: &[u8]) -> IResult<&[u8], DcxSizes> {
+    let (i, (magic, uncompressed_size, compressed_size)) =
+        tuple((tag(b"DCS\0"), be_u32, be_u32))(i)?;
+    Ok((i, DcxSizes { magic: magic.to_vec(), uncompressed_size, compressed_size }))
 }
 
 #[allow(non_snake_case)]
 #[derive(Debug)]
 pub struct DcxParams {
-    pub magic: u32,
-    pub method: [u8; 4],
+    pub magic: Vec<u8>,
+    pub method: Vec<u8>,
     pub ofs_dca: u32,
-    pub unk0C: u32,
+    pub unk0C: u8,
+    pub unk0D: u8,
+    pub unk0E: u8,
+    pub unk0F: u8,
     pub unk10: u32,
     pub unk14: u32,
     pub unk18: u32,
     pub unk1C: u32,
+}
+
+fn parse_params(i: &[u8]) {
+    let (i, (magic, method, ofs_dca, flags, unk10, unk14, unk18, unk1C)) =
+        tuple((
+            tag(b"DCP\0"),
+            alt((tag(b"DFLT"), tag(b"EDGE"), tag(b"KRAK"))),
+            be_u32,
+            count(be_u8, 4),
+            be_u32,
+            be_u32,
+            be_u32,
+            be_u32,
+        ))(i)?;
+    Ok((
+        i,
+        DcxParams {
+            magic: magic.to_vec(),
+            method,
+            ofs_dca,
+            unk0C: flags[0],
+            unk0D: flags[1],
+            unk0E: flags[2],
+            unk0F: flags[3],
+            unk10,
+            unk14,
+            unk18,
+            unk1C
+        }
+    ))
 }
 
 #[derive(Debug)]
