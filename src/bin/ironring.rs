@@ -56,6 +56,11 @@ fn main() {
             .arg(Arg::with_name("output")
                 .takes_value(true)
                 .required(false)))
+        .subcommand(SubCommand::with_name("bnd")
+            .about("?TODO?")
+            .arg(Arg::with_name("file")
+                .takes_value(true)
+                .required(true)))
         .get_matches();
 
     process::exit(match matches.subcommand() {

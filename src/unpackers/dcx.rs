@@ -7,7 +7,16 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 use crate::parsers::dcx;
 use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 
+/// Extract DCX file content.
 pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError> {
+    let (_dcx, decomp_data) = load_dcx(dcx_path)?;
+    let mut output_file = fs::File::create(output_path)?;
+    output_file.write_all(&decomp_data)?;
+    Ok(())
+}
+
+/// Load a DCX file in memory along with its decompressed content.
+pub fn load_dcx(dcx_path: &str) -> Result<(dcx::Dcx, Vec<u8>), UnpackError> {
     let mut dcx_file = fs::File::open(dcx_path)?;
     let file_len = dcx_file.metadata()?.len() as usize;
     let mut dcx_data = vec![0u8; file_len];
@@ -24,16 +33,13 @@ pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError>
     };
 
     let decomp_data = decompress_dcx(&dcx, data)?;
-
-    let mut output_file = fs::File::create(output_path)?;
-    output_file.write_all(&decomp_data)?;
-    Ok(())
+    Ok((dcx, decomp_data))
 }
 
 fn decompress_dcx(dcx: &dcx::Dcx, comp_data: &[u8]) -> Result<Vec<u8>, UnpackError> {
     let method: &[u8] = dcx.params.method.as_slice();
     if method == b"DFLT" {
-        decompress_dcx_deflate(dcx, comp_data)
+        decompress_dcx_dflt(dcx, comp_data)
     } else {
         let method_string = match std::str::from_utf8(method) {
             Ok(s) => { String::from(s) }
@@ -43,7 +49,7 @@ fn decompress_dcx(dcx: &dcx::Dcx, comp_data: &[u8]) -> Result<Vec<u8>, UnpackErr
     }
 }
 
-fn decompress_dcx_deflate(dcx: &dcx::Dcx, comp_data: &[u8]) -> Result<Vec<u8>, UnpackError> {
+fn decompress_dcx_dflt(dcx: &dcx::Dcx, comp_data: &[u8]) -> Result<Vec<u8>, UnpackError> {
     let mut data = vec![0u8; dcx.sizes.uncompressed_size as usize];
     let mut deflater = ZlibDecoder::new(comp_data);
     deflater.read_exact(&mut data)?;
