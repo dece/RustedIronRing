@@ -108,6 +108,6 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Dcx> {
     let pos_dcp = header.ofs_dcp as usize;
     let (_, params) = parse_params(&full_file[pos_dcp..])?;
     let pos_dca = pos_dcp + params.ofs_dca as usize;
-    let (_, archive) = parse_archive(&full_file[pos_dca..])?;
+    let (i, archive) = parse_archive(&full_file[pos_dca..])?;
     Ok((i, Dcx { header, sizes, params, archive }))
 }

@@ -11,6 +11,10 @@ use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 use crate::utils::fs as fs_utils;
 
 /// Parse a BHD file and extract its content.
+///
+/// As names are often a path rather than a simple file name,
+/// output path is used as the BHD root and required subdirs
+/// are automatically created.
 pub fn extract_bhd(
     bhd_path: &str,
     names: &HashMap<String, String>,
@@ -39,7 +43,7 @@ pub fn extract_bhd(
 }
 
 /// Extract files from a BHD/BDT pair.
-pub fn extract_files(
+fn extract_files(
     bhd: &bhd::Bhd,
     bdt_file: &mut fs::File,
     names: &HashMap<String, String>,

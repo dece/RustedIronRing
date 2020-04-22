@@ -4,6 +4,7 @@ use std::io;
 pub enum UnpackError {
     Io(io::Error),
     Parsing(String),
+    Compression(String),
     Unknown(String),
 }
 
