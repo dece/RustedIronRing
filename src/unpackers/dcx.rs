@@ -7,7 +7,7 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 use crate::parsers::dcx;
 use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 
-/// Extract DCX file content.
+/// Extract DCX file content to disk.
 pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError> {
     let (_dcx, decomp_data) = load_dcx(dcx_path)?;
     let mut output_file = fs::File::create(output_path)?;

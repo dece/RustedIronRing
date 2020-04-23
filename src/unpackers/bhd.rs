@@ -10,7 +10,7 @@ use crate::parsers::bhd;
 use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 use crate::utils::fs as fs_utils;
 
-/// Parse a BHD file and extract its content.
+/// Parse a BHD file and extract its content from sister BDT.
 ///
 /// As names are often a path rather than a simple file name,
 /// output path is used as the BHD root and required subdirs

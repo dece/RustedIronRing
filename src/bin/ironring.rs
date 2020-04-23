@@ -5,7 +5,7 @@ use std::process;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
-use rir::{name_hashes, unpackers};
+use rir::{name_hashes, unpackers, utils};
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
@@ -44,21 +44,28 @@ fn main() {
                 .required(false)
                 .default_value(default_namefilepath)))
         .subcommand(SubCommand::with_name("hash")
-            .about("Calculate hash for a string")
+            .about("Calculates hash for a string")
             .arg(Arg::with_name("value")
                 .takes_value(true)
                 .required(true)))
         .subcommand(SubCommand::with_name("dcx")
-            .about("?TODO?")
+            .about("Extracts and decompress DCX data")
             .arg(Arg::with_name("file")
                 .takes_value(true)
                 .required(true))
             .arg(Arg::with_name("output")
+                .short("o")
+                .long("output")
                 .takes_value(true)
                 .required(false)))
         .subcommand(SubCommand::with_name("bnd")
-            .about("?TODO?")
+            .about("Extracts BND contents")
             .arg(Arg::with_name("file")
+                .takes_value(true)
+                .required(true))
+            .arg(Arg::with_name("output")
+                .short("o")
+                .long("output")
                 .takes_value(true)
                 .required(true)))
         .get_matches();
@@ -68,6 +75,7 @@ fn main() {
         ("bhds", Some(s)) => { cmd_bhds(s) }
         ("hash", Some(s)) => { cmd_hash(s) }
         ("dcx", Some(s)) => { cmd_dcx(s) }
+        ("bnd", Some(s)) => { cmd_bnd(s) }
         _ => { 0 }
     })
 }
@@ -133,7 +141,7 @@ fn cmd_bhds(args: &ArgMatches) -> i32 {
             }
         }
     }
-    return 0
+    0
 }
 
 fn cmd_hash(args: &ArgMatches) -> i32 {
@@ -144,24 +152,54 @@ fn cmd_hash(args: &ArgMatches) -> i32 {
 
 fn cmd_dcx(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
+    let mut output_path_valid = false;
     let mut output_path: String = match args.value_of("output") {
-        Some(s) => { s.to_string() }
+        Some(s) => { output_path_valid = true; s.to_string() }
         _ => { String::with_capacity(file_path.len()) }
     };
-    if output_path.is_empty() {
-        let mut pb = path::PathBuf::from(&file_path);
-        pb.set_extension("");
-        if let Some(s) = pb.to_str() {
-            output_path.push_str(s);
-        } else {
-            eprintln!("Could not create an uncompressed path for {}. \
-                       Provide one as \"output\" argument.", file_path);
-            return 1
+    // If no output path is provided, try to strip the file extension.
+    if !output_path_valid {
+        if let Some(pb) = utils::fs::strip_extension(&path::PathBuf::from(&file_path)) {
+            if let Some(s) = pb.to_str() {
+                output_path.push_str(s);
+                output_path_valid = true;
+            }
         }
+    }
+    if !output_path_valid {
+        eprintln!("Could not determine a valid output path.");
+        return 1
+    }
+    // If the output path is a dir, try to strip extension and place the file there.
+    if path::Path::new(&output_path).is_dir() {
+        output_path_valid = false;
+        let mut out_pb = path::PathBuf::from(&output_path);
+        if let Some(file_pb) = utils::fs::strip_extension(&path::PathBuf::from(&file_path)) {
+            if let Some(file_name) = file_pb.file_name() {
+                if let Some(file_name_str) = file_name.to_str() {
+                    out_pb.push(file_name_str);
+                    if let Some(s) = out_pb.as_path().to_str() {
+                        output_path.clear();
+                        output_path.push_str(s);
+                        output_path_valid = true;
+                    }
+                }
+            }
+        }
+    }
+    if !output_path_valid {
+        eprintln!("Could not determine a valid output path.");
+        return 1
     }
 
     match unpackers::dcx::extract_dcx(file_path, &output_path) {
         Err(e) => { eprintln!("Failed to extract DCX: {:?}", e); return 1 }
         _ => { 0 }
     }
+}
+
+fn cmd_bnd(args: &ArgMatches) -> i32 {
+    let _file_path: &str = args.value_of("file").unwrap();
+    let _output_path: &str = args.value_of("output").unwrap();
+    0
 }
