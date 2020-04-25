@@ -199,7 +199,10 @@ fn cmd_dcx(args: &ArgMatches) -> i32 {
 }
 
 fn cmd_bnd(args: &ArgMatches) -> i32 {
-    let _file_path: &str = args.value_of("file").unwrap();
+    let file_path: &str = args.value_of("file").unwrap();
     let _output_path: &str = args.value_of("output").unwrap();
-    0
+    match unpackers::bnd::load_bnd_file(file_path) {
+        Err(e) => { eprintln!("Failed to extract BND: {:?}", e); return 1 }
+        _ => { 0 }
+    }
 }

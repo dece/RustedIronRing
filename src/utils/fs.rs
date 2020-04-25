@@ -29,10 +29,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_strip_ext() {
+    fn test_strip_extension() {
         let pb = path::PathBuf::from("file.ext");
-        assert_eq!(strip_ext(&pb).unwrap(), path::PathBuf::from("file"));
+        assert_eq!(strip_extension(&pb).unwrap(), path::PathBuf::from("file"));
         let pb = path::PathBuf::from("file");
-        assert!(strip_ext(&pb).is_none());
+        assert!(strip_extension(&pb).is_none());
     }
 }

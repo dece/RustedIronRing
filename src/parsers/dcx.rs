@@ -34,7 +34,6 @@ fn parse_sizes(i: &[u8]) -> IResult<&[u8], DcxSizes> {
     Ok((i, DcxSizes { magic: magic.to_vec(), uncompressed_size, compressed_size }))
 }
 
-#[allow(non_snake_case)]
 #[derive(Debug)]
 pub struct DcxParams {
     pub magic: Vec<u8>,
@@ -50,7 +49,6 @@ pub struct DcxParams {
     pub unk1C: u32,
 }
 
-#[allow(non_snake_case)]
 fn parse_params(i: &[u8]) -> IResult<&[u8], DcxParams> {
     let (i, (magic, method, ofs_dca, flags, unk10, unk14, unk18, unk1C)) =
         tuple((
@@ -76,7 +74,7 @@ fn parse_params(i: &[u8]) -> IResult<&[u8], DcxParams> {
             unk10,
             unk14,
             unk18,
-            unk1C
+            unk1C,
         }
     ))
 }

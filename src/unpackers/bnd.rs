@@ -1,3 +1,8 @@
+use std::fs;
+use std::io::Read;
+
+use nom::Err::{Error as NomError, Failure as NomFailure};
+
 use crate::parsers::bnd;
 use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 
@@ -5,8 +10,8 @@ use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
 ///
 /// Wraps around `extract_bnd` to load the BND from disk.
 pub fn extract_bnd_file(bnd_path: &str, output_path: &str) -> Result<(), UnpackError> {
-    let bnd = load_bnd_file(bnd_path)?;
-    extract_bnd(bnd, output_path)?;
+//    let bnd = load_bnd_file(bnd_path)?;
+//    extract_bnd(bnd, output_path)?;
     Ok(())
 }
 
@@ -31,5 +36,15 @@ pub fn load_bnd_file(bnd_path: &str) -> Result<bnd::Bnd, UnpackError> {
 
 /// Load a BND file from a bytes slice.
 pub fn load_bnd(bnd_data: &[u8]) -> Result<bnd::Bnd, UnpackError> {
-    Ok(())
+    let (_, bnd) = match bnd::parse(bnd_data) {
+        Ok(result) => { result }
+        Err(NomError(e)) | Err(NomFailure(e)) => {
+            let reason = unpackers_errors::get_nom_error_reason(e.1);
+            return Err(UnpackError::Parsing("BND parsing failed: ".to_owned() + &reason))
+        }
+        e => {
+            return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
+        }
+    };
+    Ok(bnd)
 }

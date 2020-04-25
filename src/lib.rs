@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 pub mod name_hashes;
 pub mod parsers {
     pub mod bhd;
@@ -11,5 +13,6 @@ pub mod unpackers {
     pub mod errors;
 }
 pub mod utils {
+    pub mod bin;
     pub mod fs;
 }
