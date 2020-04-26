@@ -13,7 +13,8 @@ name = "ironring"
 
 [dependencies]
 clap = "2.33"
+encoding_rs = "0.8"
+flate2 = "1.0"
 nom = "5"
 num-bigint = "0.2"
 num-traits = "0.2"
-flate2 = "1.0"

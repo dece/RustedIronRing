@@ -1,10 +1,18 @@
+use std::str;
+
 use nom::IResult;
-use nom::bytes::complete::{tag, take, take_until};
+use nom::bytes::complete::{tag, take};
 use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
 
 use crate::utils::bin::has_flag;
+use crate::parsers::common::{sjis_to_string, take_cstring};
+
+const FORMAT_HAS_ID: u8          = 0b00000010;
+const FORMAT_HAS_NAME1: u8       = 0b00000100;
+const FORMAT_HAS_NAME2: u8       = 0b00001000;
+const FORMAT_HAS_UNCOMP_SIZE: u8 = 0b00100000;
 
 #[derive(Debug)]
 pub struct BndHeader {
@@ -18,38 +26,49 @@ pub struct BndHeader {
     pub ofs_data: u32,
     pub unk18: u32,
     pub unk1C: u32,
-
-    // Data computed once to avoid clutter. TODO do it better
-    format: u8,       // Format with correct bit order.
-    use_be: bool,     // Use big-endian to parse this BND.
-    has_paths: bool,  // Files have paths.
 }
 
-const FORMAT_HAS_ID: u8          = 0b00000010;
-const FORMAT_HAS_NAME1: u8       = 0b00000100;
-const FORMAT_HAS_NAME2: u8       = 0b00001000;
-const FORMAT_HAS_UNCOMP_SIZE: u8 = 0b00100000;
-
 impl BndHeader {
-    pub fn format(bit_en: u8, raw_format: u8) -> u8 {
-        if bit_en == 1 || has_flag(raw_format, 0x1) && !has_flag(raw_format, 0x80) {
-            raw_format
-        } else {
-            raw_format.reverse_bits()
-        }
+    /// Return format u8 with varying endianness managed.
+    pub fn format(&self) -> u8 { format(self.bit_endianness, self.raw_format) }
+
+    /// Return whether parsing byte order is big endian or not.
+    pub fn use_be(&self) -> bool { use_be(self.endianness, self.format()) }
+
+    /// Return whether files have IDs.
+    pub fn has_ids(&self) -> bool {
+        has_flag(self.format(), FORMAT_HAS_ID)
     }
 
-    pub fn use_be(en: u8, format: u8) -> bool {
-        en == 1 || has_flag(format, 0x1)
+    /// Return whether files have paths.
+    pub fn has_paths(&self) -> bool {
+        let format = self.format();
+        has_flag(format, FORMAT_HAS_NAME1) || has_flag(format, FORMAT_HAS_NAME2)
     }
+
+    /// Return whether files have uncompressed size.
+    pub fn has_uncomp_size(&self) -> bool {
+        has_flag(self.format(), FORMAT_HAS_UNCOMP_SIZE)
+    }
+}
+
+fn format(bit_en: u8, raw_format: u8) -> u8 {
+    if bit_en == 1 || has_flag(raw_format, 0x1) && !has_flag(raw_format, 0x80) {
+        raw_format
+    } else {
+        raw_format.reverse_bits()
+    }
+}
+
+fn use_be(en: u8, format: u8) -> bool {
+    en == 1 || has_flag(format, 0x1)
 }
 
 fn parse_header(i: &[u8]) -> IResult<&[u8], BndHeader> {
     let (i, (magic, version, raw_format, endianness, bit_endianness, flags0F)) =
         tuple((tag(b"BND3"), take(8usize), le_u8, le_u8, le_u8, le_u8))(i)?;
-    let format = BndHeader::format(bit_endianness, raw_format);
-    let use_be = BndHeader::use_be(endianness, format);
-    let u32_parser = if use_be { be_u32 } else { le_u32 };
+    let format = format(bit_endianness, raw_format);
+    let u32_parser = if use_be(endianness, format) { be_u32 } else { le_u32 };
     let (i, (num_files, ofs_data, unk18, unk1C)) =
         tuple((u32_parser, u32_parser, u32_parser, u32_parser))(i)?;
     Ok((
@@ -65,9 +84,6 @@ fn parse_header(i: &[u8]) -> IResult<&[u8], BndHeader> {
             ofs_data,
             unk18,
             unk1C,
-
-            format,
-            use_be,
         }
     ))
 }
@@ -84,19 +100,16 @@ pub struct BndFileInfo {
     pub ofs_path: u32,
     pub uncompressed_size: u32,
 
-    pub path: String,
+    pub path: Option<String>,
 }
 
 fn parse_file_info<'a>(i: &'a[u8], header: &BndHeader) -> IResult<&'a[u8], BndFileInfo> {
-    let u32_parser = if header.use_be { be_u32 } else { le_u32 };
+    let u32_parser = if header.use_be() { be_u32 } else { le_u32 };
     let (i, (flags, size, ofs_data)) = tuple((count(le_u8, 4), u32_parser, u32_parser))(i)?;
 
-    let (i, id) = if has_flag(header.format, FORMAT_HAS_ID) { u32_parser(i)? } else { (i, 0) };
-    let has_name = has_flag(header.format, FORMAT_HAS_NAME1) ||
-                   has_flag(header.format, FORMAT_HAS_NAME2);
-    let (i, ofs_path) = if has_name { u32_parser(i)? } else { (i, 0) };
-    let has_uncomp_size = has_flag(header.format, FORMAT_HAS_UNCOMP_SIZE);
-    let (i, uncompressed_size) = if has_uncomp_size { u32_parser(i)? } else { (i, 0) };
+    let (i, id) = if header.has_ids() { u32_parser(i)? } else { (i, 0) };
+    let (i, ofs_path) = if header.has_paths() { u32_parser(i)? } else { (i, 0) };
+    let (i, uncompressed_size) = if header.has_uncomp_size() { u32_parser(i)? } else { (i, 0) };
 
     Ok((
         i,
@@ -110,7 +123,7 @@ fn parse_file_info<'a>(i: &'a[u8], header: &BndHeader) -> IResult<&'a[u8], BndFi
             id,
             ofs_path,
             uncompressed_size,
-            path: String::new(),
+            path: None,
         }
     ))
 }
@@ -124,13 +137,19 @@ pub struct Bnd {
 pub fn parse(i: &[u8]) -> IResult<&[u8], Bnd> {
     let full_file = i;
     let (i, header) = parse_header(i)?;
-    let (i, file_infos) = count(|i| parse_file_info(i, &header), header.num_files as usize)(i)?;
-    if has_flag(header.format, FORMAT_HAS_NAME1) || has_flag(header.format, FORMAT_HAS_NAME2) {
-        for info in &file_infos {
-            let (_, path) = take_until(b"\0")(i[info.])?;
+    let (i, mut file_infos) = count(
+        |i| parse_file_info(i, &header),
+        header.num_files as usize
+    )(i)?;
+    if header.has_paths() {
+        for info in &mut file_infos {
+            let ofs_path = info.ofs_path as usize;
+            let (_, sjis_path) = take_cstring(&full_file[ofs_path..])?;
+            info.path = sjis_to_string(sjis_path);
+            if info.path.is_none() {
+                eprintln!("Failed to parse path: {:?}", sjis_path);
+            }
         }
     }
-    println!("{:?}", header);
-    println!("{:?}", file_infos);
-    Ok((i, Bnd { header, file_infos }))
+    Ok((full_file, Bnd { header, file_infos }))
 }

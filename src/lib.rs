@@ -4,6 +4,7 @@ pub mod name_hashes;
 pub mod parsers {
     pub mod bhd;
     pub mod bnd;
+    pub mod common;
     pub mod dcx;
 }
 pub mod unpackers {

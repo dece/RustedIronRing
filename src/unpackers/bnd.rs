@@ -1,24 +1,26 @@
 use std::fs;
 use std::io::Read;
+use std::path;
 
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::bnd;
 use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
+use crate::utils::fs as fs_utils;
 
 /// Extract BND file contents to disk.
 ///
 /// Wraps around `extract_bnd` to load the BND from disk.
 pub fn extract_bnd_file(bnd_path: &str, output_path: &str) -> Result<(), UnpackError> {
-//    let bnd = load_bnd_file(bnd_path)?;
-//    extract_bnd(bnd, output_path)?;
+    let bnd = load_bnd_file(bnd_path)?;
+    extract_bnd(bnd, output_path)?;
     Ok(())
 }
 
 /// Extract BND contents to disk.
 pub fn extract_bnd(bnd: bnd::Bnd, output_path: &str) -> Result<(), UnpackError> {
-    //TODO
-    //let mut output_file = fs::File::create(output_path)?;
+    let output_path = path::Path::new(output_path);
+    fs_utils::ensure_dir_exists(output_path)?;
     //output_file.write_all(&decomp_data)?;
     Ok(())
 }
