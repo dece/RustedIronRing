@@ -23,9 +23,8 @@ pub fn extract_bnd_file(
 
 /// Extract BND contents to disk.
 ///
-/// Files in the BND are written in the output_path directory, creating it if needed, without
-/// preserving directory structure. If the BND do not contain paths, it will be named after its ID.
-/// If it does not have IDs, consecutive integers will be used.
+/// Files in the BND are written in the output_dir directory, creating
+/// it if needed, without preserving directory structure.
 pub fn extract_bnd(
     bnd: &bnd::Bnd,
     bnd_data: &Vec<u8>,
@@ -83,7 +82,6 @@ fn extract_bnd_entry(
 ///
 /// Wraps around `load_bnd` to load the BND from disk. It returns the
 /// parsed BND metadata and the whole file as a byte vector.
-/// Wraps around `load_bnd` to load the BND from disk.
 pub fn load_bnd_file(bnd_path: &str) -> Result<(bnd::Bnd, Vec<u8>), UnpackError> {
     let mut bnd_file = fs::File::open(bnd_path)?;
     let file_len = bnd_file.metadata()?.len() as usize;
