@@ -67,7 +67,12 @@ fn main() {
                 .short("o")
                 .long("output")
                 .takes_value(true)
-                .required(true)))
+                .required(true))
+            .arg(Arg::with_name("overwrite")
+                .short("f")
+                .long("force")
+                .takes_value(false)
+                .required(false)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -201,7 +206,8 @@ fn cmd_dcx(args: &ArgMatches) -> i32 {
 fn cmd_bnd(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
     let output_path: &str = args.value_of("output").unwrap();
-    match unpackers::bnd::extract_bnd_file(file_path, output_path) {
+    let overwrite: bool = args.is_present("overwrite");
+    match unpackers::bnd::extract_bnd_file(file_path, output_path, overwrite) {
         Err(e) => { eprintln!("Failed to extract BND: {:?}", e); return 1 }
         _ => { 0 }
     }

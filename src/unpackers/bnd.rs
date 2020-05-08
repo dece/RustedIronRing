@@ -11,9 +11,13 @@ use crate::utils::fs as fs_utils;
 /// Extract BND file contents to disk.
 ///
 /// Wraps around `extract_bnd` to load the BND from disk.
-pub fn extract_bnd_file(bnd_path: &str, output_dir: &str) -> Result<(), UnpackError> {
+pub fn extract_bnd_file(
+    bnd_path: &str,
+    output_dir: &str,
+    overwrite: bool
+) -> Result<(), UnpackError> {
     let (bnd, data) = load_bnd_file(bnd_path)?;
-    extract_bnd(&bnd, &data, output_dir)?;
+    extract_bnd(&bnd, &data, output_dir, overwrite)?;
     Ok(())
 }
 
@@ -22,11 +26,20 @@ pub fn extract_bnd_file(bnd_path: &str, output_dir: &str) -> Result<(), UnpackEr
 /// Files in the BND are written in the output_path directory, creating it if needed, without
 /// preserving directory structure. If the BND do not contain paths, it will be named after its ID.
 /// If it does not have IDs, consecutive integers will be used.
-pub fn extract_bnd(bnd: &bnd::Bnd, bnd_data: &Vec<u8>, output_dir: &str) -> Result<(), UnpackError> {
+pub fn extract_bnd(
+    bnd: &bnd::Bnd,
+    bnd_data: &Vec<u8>,
+    output_dir: &str,
+    overwrite: bool
+) -> Result<(), UnpackError> {
     let output_dir = path::Path::new(output_dir);
     fs_utils::ensure_dir_exists(output_dir)?;
     for file_info in &bnd.file_infos {
-        extract_bnd_entry(file_info, bnd_data, output_dir)?;
+        // Extract all entries, print but ignore path errors.
+        match extract_bnd_entry(file_info, bnd_data, output_dir, overwrite) {
+            Err(UnpackError::Naming(e)) => { eprintln!("{}", e) }
+            _ => {}
+        }
     }
     Ok(())
 }
@@ -37,7 +50,8 @@ pub fn extract_bnd(bnd: &bnd::Bnd, bnd_data: &Vec<u8>, output_dir: &str) -> Resu
 fn extract_bnd_entry(
     file_info: &bnd::BndFileInfo,
     bnd_data: &Vec<u8>,
-    output_dir: &path::Path
+    output_dir: &path::Path,
+    overwrite: bool,
 ) -> Result<(), UnpackError> {
     if file_info.path.is_none() {
         return Err(UnpackError::Naming("No path for BND entry.".to_owned()));
@@ -57,6 +71,9 @@ fn extract_bnd_entry(
     let mut file_path = output_dir.to_path_buf();
     file_path.push(file_name);
 
+    if !overwrite && file_path.exists() {
+        return Err(UnpackError::Naming(format!("File already exists: {:?}", file_path)));
+    }
     let mut output_file = fs::File::create(file_path)?;
     output_file.write_all(&data)?;
     Ok(())
