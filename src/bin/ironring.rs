@@ -9,7 +9,7 @@ use rir::{name_hashes, unpackers, utils};
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
-    let matches = App::new("Rusted Iron Ring")
+    let matches = App::new("Iron Ring")
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(SubCommand::with_name("bhd")
             .about("Extracts BHD/BDT contents")
@@ -200,8 +200,8 @@ fn cmd_dcx(args: &ArgMatches) -> i32 {
 
 fn cmd_bnd(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
-    let _output_path: &str = args.value_of("output").unwrap();
-    match unpackers::bnd::load_bnd_file(file_path) {
+    let output_path: &str = args.value_of("output").unwrap();
+    match unpackers::bnd::extract_bnd_file(file_path, output_path) {
         Err(e) => { eprintln!("Failed to extract BND: {:?}", e); return 1 }
         _ => { 0 }
     }

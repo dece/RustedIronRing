@@ -1,5 +1,3 @@
-use std::str;
-
 use nom::IResult;
 use nom::bytes::complete::{tag, take};
 use nom::multi::count;
@@ -134,10 +132,14 @@ pub struct Bnd {
     pub file_infos: Vec<BndFileInfo>,
 }
 
+/// Parse a BND file to a BND struct.
+///
+/// On success, returns the full BND data along with the Bnd struct
+/// instead of the remaining data.
 pub fn parse(i: &[u8]) -> IResult<&[u8], Bnd> {
     let full_file = i;
     let (i, header) = parse_header(i)?;
-    let (i, mut file_infos) = count(
+    let (_, mut file_infos) = count(
         |i| parse_file_info(i, &header),
         header.num_files as usize
     )(i)?;

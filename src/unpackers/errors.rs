@@ -5,6 +5,7 @@ pub enum UnpackError {
     Io(io::Error),
     Parsing(String),
     Compression(String),
+    Naming(String),
     Unknown(String),
 }
 
