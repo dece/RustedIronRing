@@ -1,12 +1,12 @@
 use std::fs;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path;
 
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::bnd;
 use crate::unpackers::errors::UnpackError;
-use crate::utils::fs as fs_utils;
+use crate::utils::fs as utils_fs;
 
 /// Extract BND file contents to disk.
 ///
@@ -32,7 +32,7 @@ pub fn extract_bnd(
     overwrite: bool
 ) -> Result<(), UnpackError> {
     let output_dir = path::Path::new(output_dir);
-    fs_utils::ensure_dir_exists(output_dir)?;
+    utils_fs::ensure_dir_exists(output_dir)?;
     for file_info in &bnd.file_infos {
         // Extract all entries, print but ignore path errors.
         match extract_bnd_entry(file_info, bnd_data, output_dir, overwrite) {
@@ -83,10 +83,7 @@ fn extract_bnd_entry(
 /// Wraps around `load_bnd` to load the BND from disk. It returns the
 /// parsed BND metadata and the whole file as a byte vector.
 pub fn load_bnd_file(bnd_path: &str) -> Result<(bnd::Bnd, Vec<u8>), UnpackError> {
-    let mut bnd_file = fs::File::open(bnd_path)?;
-    let file_len = bnd_file.metadata()?.len() as usize;
-    let mut bnd_data = vec![0u8; file_len];
-    bnd_file.read_exact(&mut bnd_data)?;
+    let bnd_data = utils_fs::open_file_to_vec(bnd_path)?;
     Ok((load_bnd(&bnd_data)?, bnd_data))
 }
 

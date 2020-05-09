@@ -8,7 +8,7 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 use crate::name_hashes;
 use crate::parsers::bhd;
 use crate::unpackers::errors::UnpackError;
-use crate::utils::fs as fs_utils;
+use crate::utils::fs as utils_fs;
 
 /// Parse a BHD file and extract its content from sister BDT.
 ///
@@ -20,10 +20,7 @@ pub fn extract_bhd(
     names: &HashMap<String, String>,
     output_path: &str
 ) -> Result<(), UnpackError> {
-    let mut bhd_file = fs::File::open(bhd_path)?;
-    let file_len = bhd_file.metadata()?.len() as usize;
-    let mut bhd_data = vec![0u8; file_len];
-    bhd_file.read_exact(&mut bhd_data)?;
+    let bhd_data = utils_fs::open_file_to_vec(bhd_path)?;
     let bhd = match bhd::parse(&bhd_data) {
         Ok((_, bhd)) => bhd,
         Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("BHD", e.1)),
@@ -45,7 +42,7 @@ fn extract_files(
     output_path: &str,
 ) -> Result<(), io::Error> {
     let output_path = path::Path::new(output_path);
-    fs_utils::ensure_dir_exists(output_path)?;
+    utils_fs::ensure_dir_exists(output_path)?;
 
     for bucket in &bhd.buckets {
         for entry in bucket {
@@ -64,7 +61,7 @@ fn extract_files(
                 }
             };
             let file_path = output_path.join(rel_path);
-            fs_utils::ensure_dir_exists(file_path.parent().unwrap())?;
+            utils_fs::ensure_dir_exists(file_path.parent().unwrap())?;
             let mut output_file = fs::File::create(file_path)?;
             output_file.write_all(&data)?;
         }

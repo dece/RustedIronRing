@@ -6,12 +6,10 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::bhf;
 use crate::unpackers::errors::UnpackError;
+use crate::utils::fs as utils_fs;
 
 pub fn extract_bhf(bhf_path: &str) -> Result<(), UnpackError> {
-    let mut bhf_file = fs::File::open(bhf_path)?;
-    let file_len = bhf_file.metadata()?.len() as usize;
-    let mut bhf_data = vec![0u8; file_len];
-    bhf_file.read_exact(&mut bhf_data)?;
+    let bhf_data = utils_fs::open_file_to_vec(bhf_path)?;
     let bhf = match bhf::parse(&bhf_data) {
         Ok((_, bhf)) => { bhf }
         Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("BHF", e.1)),
@@ -22,6 +20,8 @@ pub fn extract_bhf(bhf_path: &str) -> Result<(), UnpackError> {
     if bdt_path.is_none() {
         return Err(UnpackError::Naming(format!("Can't find BDT for BHF: {}", bhf_path)))
     }
+    
+
     Ok(())
 }
 

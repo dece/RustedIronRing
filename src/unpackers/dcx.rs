@@ -6,6 +6,7 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::dcx;
 use crate::unpackers::errors::UnpackError;
+use crate::utils::fs as utils_fs;
 
 /// Extract DCX file content to disk.
 pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError> {
@@ -17,10 +18,7 @@ pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError>
 
 /// Load a DCX file in memory along with its decompressed content.
 pub fn load_dcx(dcx_path: &str) -> Result<(dcx::Dcx, Vec<u8>), UnpackError> {
-    let mut dcx_file = fs::File::open(dcx_path)?;
-    let file_len = dcx_file.metadata()?.len() as usize;
-    let mut dcx_data = vec![0u8; file_len];
-    dcx_file.read_exact(&mut dcx_data)?;
+    let dcx_data = utils_fs::open_file_to_vec(dcx_path)?;
     let (data, dcx) = match dcx::parse(&dcx_data) {
         Ok(result) => result,
         Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("DCX", e.1)),
