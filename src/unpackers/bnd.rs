@@ -5,7 +5,7 @@ use std::path;
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::bnd;
-use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
+use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as fs_utils;
 
 /// Extract BND file contents to disk.
@@ -94,13 +94,8 @@ pub fn load_bnd_file(bnd_path: &str) -> Result<(bnd::Bnd, Vec<u8>), UnpackError>
 pub fn load_bnd(bnd_data: &[u8]) -> Result<bnd::Bnd, UnpackError> {
     let (_, bnd) = match bnd::parse(bnd_data) {
         Ok(result) => result,
-        Err(NomError(e)) | Err(NomFailure(e)) => {
-            let reason = unpackers_errors::get_nom_error_reason(e.1);
-            return Err(UnpackError::Parsing("BND parsing failed: ".to_owned() + &reason))
-        }
-        e => {
-            return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
-        }
+        Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("BND", e.1)),
+        e => return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e))),
     };
     Ok(bnd)
 }

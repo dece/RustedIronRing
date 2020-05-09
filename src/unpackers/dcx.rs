@@ -5,7 +5,7 @@ use flate2::read::ZlibDecoder;
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::dcx;
-use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
+use crate::unpackers::errors::UnpackError;
 
 /// Extract DCX file content to disk.
 pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError> {
@@ -22,14 +22,9 @@ pub fn load_dcx(dcx_path: &str) -> Result<(dcx::Dcx, Vec<u8>), UnpackError> {
     let mut dcx_data = vec![0u8; file_len];
     dcx_file.read_exact(&mut dcx_data)?;
     let (data, dcx) = match dcx::parse(&dcx_data) {
-        Ok(result) => { result }
-        Err(NomError(e)) | Err(NomFailure(e)) => {
-            let reason = unpackers_errors::get_nom_error_reason(e.1);
-            return Err(UnpackError::Parsing("DCX parsing failed: ".to_owned() + &reason))
-        }
-        e => {
-            return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
-        }
+        Ok(result) => result,
+        Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("DCX", e.1)),
+        e => return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e))),
     };
 
     let decomp_data = decompress_dcx(&dcx, data)?;

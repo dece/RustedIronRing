@@ -7,7 +7,7 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::name_hashes;
 use crate::parsers::bhd;
-use crate::unpackers::errors::{self as unpackers_errors, UnpackError};
+use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as fs_utils;
 
 /// Parse a BHD file and extract its content from sister BDT.
@@ -25,14 +25,9 @@ pub fn extract_bhd(
     let mut bhd_data = vec![0u8; file_len];
     bhd_file.read_exact(&mut bhd_data)?;
     let bhd = match bhd::parse(&bhd_data) {
-        Ok((_, bhd)) => { bhd }
-        Err(NomError(e)) | Err(NomFailure(e)) => {
-            let reason = unpackers_errors::get_nom_error_reason(e.1);
-            return Err(UnpackError::Parsing("BHD parsing failed: ".to_owned() + &reason))
-        }
-        e => {
-            return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
-        }
+        Ok((_, bhd)) => bhd,
+        Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("BHD", e.1)),
+        e => return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
     };
 
     let bdt_path = path::PathBuf::from(bhd_path).with_extension("bdt");
