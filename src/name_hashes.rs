@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs;
 use std::io::{BufRead, BufReader, Error};
 
 use num_bigint::BigUint;
@@ -21,13 +21,18 @@ pub fn hash_as_string(h: u32) -> String {
     format!("{:08X}", h)
 }
 
+//#[no_mangle]
+//pub extern "C" fn nam_hash_as_string(h: u32) -> *mut libc::c_char {
+//    hash_as_string(h)
+//}
+
 /// Load a namelist file into a map.
 ///
 /// Format for the input file should be the following for every line:
 /// CAFECAFE: /chr/whatever.ext
 pub fn load_name_map(path: &str) -> Result<HashMap<String, String>, Error> {
     let mut names = HashMap::new();
-    let namefile = File::open(path)?;
+    let namefile = fs::File::open(path)?;
     for line_ in BufReader::new(namefile).lines() {
         if let Ok(line) = line_ {
             let (hash, name) = line.split_at(8);
@@ -35,6 +40,22 @@ pub fn load_name_map(path: &str) -> Result<HashMap<String, String>, Error> {
         }
     }
     Ok(names)
+}
+
+mod rir_ffi {
+    use std::ffi;
+    use super::*;
+
+    #[no_mangle]
+    pub extern "C" fn nam_hash(s: *const libc::c_char) -> u32 {
+        let c_s = unsafe { assert!(!s.is_null()); ffi::CStr::from_ptr(s) };
+        hash(c_s.to_str().unwrap())
+    }
+
+    #[no_mangle]
+    pub extern "C" fn nam_hash_as_string(h: u32) -> *mut libc::c_char {
+        ffi::CString::new(hash_as_string(h)).unwrap().into_raw()
+    }
 }
 
 #[cfg(test)]
