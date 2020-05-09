@@ -7,6 +7,7 @@ use nom::sequence::tuple;
 use crate::utils::bin::has_flag;
 use crate::parsers::common::{sjis_to_string, take_cstring};
 
+const FORMAT_BE: u8              = 0b00000001;
 const FORMAT_HAS_ID: u8          = 0b00000010;
 const FORMAT_HAS_NAME1: u8       = 0b00000100;
 const FORMAT_HAS_NAME2: u8       = 0b00001000;
@@ -26,40 +27,47 @@ pub struct BndHeader {
     pub unk1C: u32,
 }
 
-impl BndHeader {
-    /// Return format u8 with varying endianness managed.
-    pub fn format(&self) -> u8 { format(self.bit_endianness, self.raw_format) }
-
-    /// Return whether parsing byte order is big endian or not.
-    pub fn use_be(&self) -> bool { use_be(self.endianness, self.format()) }
+pub trait BinderOptions {
+    fn format(&self) -> u8;
+    fn use_be(&self) -> bool;
 
     /// Return whether files have IDs.
-    pub fn has_ids(&self) -> bool {
+    fn has_ids(&self) -> bool {
         has_flag(self.format(), FORMAT_HAS_ID)
     }
 
     /// Return whether files have paths.
-    pub fn has_paths(&self) -> bool {
+    fn has_paths(&self) -> bool {
         let format = self.format();
         has_flag(format, FORMAT_HAS_NAME1) || has_flag(format, FORMAT_HAS_NAME2)
     }
 
     /// Return whether files have uncompressed size.
-    pub fn has_uncomp_size(&self) -> bool {
+    fn has_uncomp_size(&self) -> bool {
         has_flag(self.format(), FORMAT_HAS_UNCOMP_SIZE)
     }
 }
 
-fn format(bit_en: u8, raw_format: u8) -> u8 {
-    if bit_en == 1 || has_flag(raw_format, 0x1) && !has_flag(raw_format, 0x80) {
+impl BinderOptions for BndHeader {
+    /// See `format` function.
+    fn format(&self) -> u8 { format(self.bit_endianness, self.raw_format) }
+
+    /// See `use_be` function.
+    fn use_be(&self) -> bool { use_be(self.endianness, self.format()) }
+}
+
+/// Return format u8 with varying endianness managed.
+pub fn format(bit_en: u8, raw_format: u8) -> u8 {
+    if bit_en == 1 || has_flag(raw_format, FORMAT_BE) && !has_flag(raw_format, 0x80) {
         raw_format
     } else {
         raw_format.reverse_bits()
     }
 }
 
-fn use_be(en: u8, format: u8) -> bool {
-    en == 1 || has_flag(format, 0x1)
+/// Return whether parsing byte order is big endian or not.
+pub fn use_be(en: u8, format: u8) -> bool {
+    en == 1 || has_flag(format, FORMAT_BE)
 }
 
 fn parse_header(i: &[u8]) -> IResult<&[u8], BndHeader> {

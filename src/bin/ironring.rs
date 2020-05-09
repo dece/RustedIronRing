@@ -212,3 +212,9 @@ fn cmd_bnd(args: &ArgMatches) -> i32 {
         _ => { 0 }
     }
 }
+
+fn cmd_bhf(args: &ArgMatches) -> i32 {
+    let file_path: &str = args.value_of("file").unwrap();
+    let output_path: &str = args.value_of("output").unwrap();
+    0
+}
