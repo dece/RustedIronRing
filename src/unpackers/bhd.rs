@@ -20,6 +20,7 @@ pub fn extract_bhd(
     names: &HashMap<String, String>,
     output_path: &str
 ) -> Result<(), UnpackError> {
+    let bhd_path = path::Path::new(bhd_path);
     let bhd_data = utils_fs::open_file_to_vec(bhd_path)?;
     let bhd = match bhd::parse(&bhd_data) {
         Ok((_, bhd)) => bhd,
@@ -27,7 +28,7 @@ pub fn extract_bhd(
         e => return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e)))
     };
 
-    let bdt_path = path::PathBuf::from(bhd_path).with_extension("bdt");
+    let bdt_path = bhd_path.to_path_buf().with_extension("bdt");
     let mut bdt_file = fs::File::open(bdt_path.to_str().unwrap())?;
 
     extract_files(&bhd, &mut bdt_file, &names, &output_path)?;

@@ -25,7 +25,7 @@ pub fn strip_extension(path: &path::PathBuf) -> Option<path::PathBuf> {
 }
 
 /// Open a binary file and read it to the end in a byte vector.
-pub fn open_file_to_vec(path: &str) -> Result<Vec<u8>, io::Error> {
+pub fn open_file_to_vec(path: &path::Path) -> Result<Vec<u8>, io::Error> {
     let mut file = fs::File::open(path)?;
     let file_len = file.metadata()?.len() as usize;
     let mut data = vec![0u8; file_len];

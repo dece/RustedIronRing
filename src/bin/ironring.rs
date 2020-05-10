@@ -73,6 +73,21 @@ fn main() {
                 .long("force")
                 .takes_value(false)
                 .required(false)))
+        .subcommand(SubCommand::with_name("bhf")
+            .about("Extracts BHF/BDT contents")
+            .arg(Arg::with_name("file")
+                .takes_value(true)
+                .required(true))
+            .arg(Arg::with_name("output")
+                .short("o")
+                .long("output")
+                .takes_value(true)
+                .required(false))
+            .arg(Arg::with_name("overwrite")
+                .short("f")
+                .long("force")
+                .takes_value(false)
+                .required(false)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -81,6 +96,7 @@ fn main() {
         ("hash", Some(s)) => { cmd_hash(s) }
         ("dcx", Some(s)) => { cmd_dcx(s) }
         ("bnd", Some(s)) => { cmd_bnd(s) }
+        ("bhf", Some(s)) => { cmd_bhf(s) }
         _ => { 0 }
     })
 }
@@ -215,6 +231,10 @@ fn cmd_bnd(args: &ArgMatches) -> i32 {
 
 fn cmd_bhf(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
-    let output_path: &str = args.value_of("output").unwrap();
-    0
+    let output_path: Option<&str> = args.value_of("output");
+    let overwrite: bool = args.is_present("overwrite");
+    match unpackers::bhf::extract_bhf_file(file_path, output_path, overwrite) {
+        Err(e) => { eprintln!("Failed to extract BHF: {:?}", e); return 1 }
+        _ => { 0 }
+    }
 }

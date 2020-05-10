@@ -46,18 +46,18 @@ pub fn extract_bnd(
 /// Extract a file contained in a BND using its BndFileInfo.
 ///
 /// The info struct must have a valid internal path.
-fn extract_bnd_entry(
+pub fn extract_bnd_entry(
     file_info: &bnd::BndFileInfo,
     bnd_data: &Vec<u8>,
     output_dir: &path::Path,
     overwrite: bool,
 ) -> Result<(), UnpackError> {
     if file_info.path.is_none() {
-        return Err(UnpackError::Naming("No path for BND entry.".to_owned()));
+        return Err(UnpackError::Naming("No path for BND entry.".to_owned()))
     }
 
     let ofs_start = file_info.ofs_data as usize;
-    let ofs_end = (file_info.ofs_data + file_info.size) as usize;
+    let ofs_end = ofs_start + file_info.size as usize;
     let data = &bnd_data[ofs_start..ofs_end];
 
     let internal_path = file_info.path.to_owned().unwrap();
@@ -69,10 +69,11 @@ fn extract_bnd_entry(
     };
     let mut file_path = output_dir.to_path_buf();
     file_path.push(file_name);
-
     if !overwrite && file_path.exists() {
-        return Err(UnpackError::Naming(format!("File already exists: {:?}", file_path)));
+        let existing = file_path.to_string_lossy();
+        return Err(UnpackError::Naming(format!("File already exists: {}", existing)))
     }
+
     let mut output_file = fs::File::create(file_path)?;
     output_file.write_all(&data)?;
     Ok(())
@@ -83,16 +84,15 @@ fn extract_bnd_entry(
 /// Wraps around `load_bnd` to load the BND from disk. It returns the
 /// parsed BND metadata and the whole file as a byte vector.
 pub fn load_bnd_file(bnd_path: &str) -> Result<(bnd::Bnd, Vec<u8>), UnpackError> {
-    let bnd_data = utils_fs::open_file_to_vec(bnd_path)?;
+    let bnd_data = utils_fs::open_file_to_vec(path::Path::new(bnd_path))?;
     Ok((load_bnd(&bnd_data)?, bnd_data))
 }
 
 /// Load a BND file from a bytes slice.
 pub fn load_bnd(bnd_data: &[u8]) -> Result<bnd::Bnd, UnpackError> {
-    let (_, bnd) = match bnd::parse(bnd_data) {
-        Ok(result) => result,
-        Err(NomError(e)) | Err(NomFailure(e)) => return Err(UnpackError::parsing_err("BND", e.1)),
-        e => return Err(UnpackError::Unknown(format!("Unknown error: {:?}", e))),
-    };
-    Ok(bnd)
+    match bnd::parse(bnd_data) {
+        Ok((_, result)) => Ok(result),
+        Err(NomError(e)) | Err(NomFailure(e)) => Err(UnpackError::parsing_err("BND", e.1)),
+        e => Err(UnpackError::Unknown(format!("Unknown error: {:?}", e))),
+    }
 }

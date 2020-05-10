@@ -38,6 +38,7 @@ FLAGS:
 SUBCOMMANDS:
     bhd     Extracts BHD/BDT contents
     bhds    Extracts all BHD/BDT content (alphabetically) in a folder
+    bhf     Extracts BHF/BDT contents
     bnd     Extracts BND contents
     dcx     Extracts and decompress DCX data
     hash    Calculates hash for a string
@@ -52,6 +53,7 @@ Features
 - BHD5 / BDT: extraction from disk to disk.
 - DCX: decompression from disk to disk.
 - BND (v3): extraction from disk/memory to disk/memory.
+- BHF (v3): extraction from disk/memory to disk/memory.
 
 Repacking is not supported, maybe one day. It is not that useful when using
 [UDSFM][udsfm] and [Yabber][yabber], but if you really need it you can check out

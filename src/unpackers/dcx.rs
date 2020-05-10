@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::{Read, Write};
+use std::path;
 
 use flate2::read::ZlibDecoder;
 use nom::Err::{Error as NomError, Failure as NomFailure};
@@ -18,6 +19,7 @@ pub fn extract_dcx(dcx_path: &str, output_path: &str) -> Result<(), UnpackError>
 
 /// Load a DCX file in memory along with its decompressed content.
 pub fn load_dcx(dcx_path: &str) -> Result<(dcx::Dcx, Vec<u8>), UnpackError> {
+    let dcx_path = path::Path::new(dcx_path);
     let dcx_data = utils_fs::open_file_to_vec(dcx_path)?;
     let (data, dcx) = match dcx::parse(&dcx_data) {
         Ok(result) => result,
