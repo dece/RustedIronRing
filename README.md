@@ -49,9 +49,9 @@ SUBCOMMANDS:
 Features
 --------
 
-- BHD5 / BDT: extraction on disk.
-- DCX: decompression on disk.
-- BND (v3): extraction on disk or in memory.
+- BHD5 / BDT: extraction from disk to disk.
+- DCX: decompression from disk to disk.
+- BND (v3): extraction from disk/memory to disk/memory.
 
 Repacking is not supported, maybe one day. It is not that useful when using
 [UDSFM][udsfm] and [Yabber][yabber], but if you really need it you can check out
