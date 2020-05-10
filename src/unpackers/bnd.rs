@@ -5,6 +5,7 @@ use std::path;
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::parsers::bnd;
+use crate::unpackers::dcx::load_dcx;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
 
@@ -14,10 +15,16 @@ use crate::utils::fs as utils_fs;
 pub fn extract_bnd_file(
     bnd_path: &str,
     output_dir: &str,
-    overwrite: bool
+    overwrite: bool,
+    decompress: bool,
 ) -> Result<(), UnpackError> {
-    let (bnd, data) = load_bnd_file(bnd_path)?;
-    extract_bnd(&bnd, &data, output_dir, overwrite)?;
+    let (bnd, bnd_data) = if decompress {
+        let (_, decomp_data) = load_dcx(bnd_path)?;
+        (load_bnd(&decomp_data)?, decomp_data)
+    } else {
+        load_bnd_file(bnd_path)?
+    };
+    extract_bnd(&bnd, &bnd_data, output_dir, overwrite)?;
     Ok(())
 }
 

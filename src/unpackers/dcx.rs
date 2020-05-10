@@ -50,3 +50,65 @@ fn decompress_dcx_dflt(dcx: &dcx::Dcx, comp_data: &[u8]) -> Result<Vec<u8>, Unpa
     deflater.read_exact(&mut data)?;
     Ok(data)
 }
+
+/// Get a decompressed path for this file in this path.
+///
+/// If the path is some valid file path (existing or not), use it.
+/// If the path is None, it tries to strip "dcx" extension from the
+/// path and return it. If there is no extension, return None.
+/// If the path is a valid dir path, tries to strip dcx from file name
+/// and join this file name to the output path.
+pub fn get_decompressed_path(dcx_path: &str, output_path: Option<&str>) -> Option<String> {
+    let mut output_path_valid = false;
+    // If no output path is provided, try to strip the file extension.
+    let mut output_path: String = match output_path {
+        Some(s) => { output_path_valid = true; s.to_string() }
+        _ => { String::with_capacity(dcx_path.len()) }
+    };
+    if !output_path_valid {
+        if let Some(pb) = utils_fs::strip_extension(&path::PathBuf::from(&dcx_path)) {
+            if let Some(s) = pb.to_str() {
+                output_path.push_str(s);
+                output_path_valid = true;
+            }
+        }
+    }
+    if !output_path_valid {
+        eprintln!("Can't determine a valid output path: {}", dcx_path);
+        return None
+    }
+    // If the output path is a dir, try to strip extension and place the file there.
+    if path::Path::new(&output_path).is_dir() {
+        output_path_valid = false;
+        if let Some(file_pb) = utils_fs::strip_extension(&path::PathBuf::from(&dcx_path)) {
+            if let Some(file_name) = file_pb.file_name() {
+                if let Some(file_name_str) = file_name.to_str() {
+                    let mut out_pb = path::PathBuf::from(&output_path);
+                    out_pb.push(file_name_str);
+                    if let Some(s) = out_pb.as_path().to_str() {
+                        output_path.clear();
+                        output_path.push_str(s);
+                        output_path_valid = true;
+                    }
+                }
+            }
+        }
+    }
+    if !output_path_valid {
+        eprintln!("Can't determine a valid output path: {}", dcx_path);
+        return None
+    }
+    Some(output_path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_decompressed_path() {
+        // Without an output path.
+        assert_eq!(get_decompressed_path("file.ext.dcx", None).unwrap(), "file.ext");
+        assert_eq!(get_decompressed_path("file.ext", None).unwrap(), "file");
+    }
+}

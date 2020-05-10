@@ -11,9 +11,8 @@ pub enum UnpackError {
 
 impl UnpackError {
     pub fn parsing_err(filetype: &str, kind: nom::error::ErrorKind) -> UnpackError {
-        let reason = format!("{:?} {:?}", kind, kind.description());
-        let message = format!("{} parsing failed: ", filetype);
-        UnpackError::Parsing(message + &reason)
+        let message = format!("{} parsing failed: {}", filetype, kind.description());
+        UnpackError::Parsing(message)
     }
 }
 

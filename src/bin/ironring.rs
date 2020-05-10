@@ -5,7 +5,7 @@ use std::process;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
-use rir::{name_hashes, unpackers, utils};
+use rir::{name_hashes, unpackers};
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
@@ -14,80 +14,65 @@ fn main() {
         .subcommand(SubCommand::with_name("bhd")
             .about("Extracts BHD/BDT contents")
             .arg(Arg::with_name("file")
-                .takes_value(true)
-                .required(true))
+                .help("BHD file path, usually with bhd5 extension")
+                .takes_value(true).required(true))
             .arg(Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .takes_value(true)
-                .required(true))
+                .help("Output directory")
+                .short("o").long("output").takes_value(true).required(true))
             .arg(Arg::with_name("namefile")
-                .short("n")
-                .long("names")
-                .takes_value(true)
-                .required(false)
+                .help("Namefile path, mapping hashes to file names")
+                .short("n").long("names").takes_value(true).required(false)
                 .default_value(default_namefilepath)))
         .subcommand(SubCommand::with_name("bhds")
             .about("Extracts all BHD/BDT content (alphabetically) in a folder")
             .arg(Arg::with_name("folder")
-                .takes_value(true)
-                .required(true))
+                .help("Path where BHD/BDT archives are stored")
+                .takes_value(true).required(true))
             .arg(Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .takes_value(true)
-                .required(true))
+                .help("Output directory")
+                .short("o").long("output").takes_value(true).required(true))
             .arg(Arg::with_name("namefile")
-                .short("n")
-                .long("names")
-                .takes_value(true)
-                .required(false)
+                .help("Namefile path, mapping hashes to file names")
+                .short("n").long("names").takes_value(true).required(false)
                 .default_value(default_namefilepath)))
         .subcommand(SubCommand::with_name("hash")
             .about("Calculates hash for a string")
             .arg(Arg::with_name("value")
-                .takes_value(true)
-                .required(true)))
+                .help("Any string or path to hash")
+                .takes_value(true).required(true)))
         .subcommand(SubCommand::with_name("dcx")
             .about("Extracts and decompress DCX data")
             .arg(Arg::with_name("file")
-                .takes_value(true)
-                .required(true))
+                .help("DCX path")
+                .takes_value(true).required(true))
             .arg(Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .takes_value(true)
-                .required(false)))
+                .help("Output directory")
+                .short("o").long("output").takes_value(true).required(false)))
         .subcommand(SubCommand::with_name("bnd")
             .about("Extracts BND contents")
             .arg(Arg::with_name("file")
-                .takes_value(true)
-                .required(true))
+                .help("BND (or BND/DCX) file path")
+                .takes_value(true).required(true))
             .arg(Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .takes_value(true)
-                .required(true))
+                .help("Output directory")
+                .short("o").long("output").takes_value(true).required(true))
             .arg(Arg::with_name("overwrite")
-                .short("f")
-                .long("force")
-                .takes_value(false)
-                .required(false)))
+                .help("Overwrite existing files")
+                .short("f").long("force").takes_value(false).required(false))
+            .arg(Arg::with_name("decompress")
+                .help("Decompress file first if BND is in DCX")
+                .long("decompress").takes_value(false).required(false)))
         .subcommand(SubCommand::with_name("bhf")
             .about("Extracts BHF/BDT contents")
             .arg(Arg::with_name("file")
-                .takes_value(true)
-                .required(true))
+                .help("BHF file path")
+                .takes_value(true).required(true))
             .arg(Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .takes_value(true)
-                .required(false))
+                .help("Output directory")
+                .short("o").long("output").takes_value(true).required(false))
             .arg(Arg::with_name("overwrite")
-                .short("f")
-                .long("force")
-                .takes_value(false)
-                .required(false)))
+                .help("Overwrite existing files")
+                .short("f").long("force").takes_value(false).required(false)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -119,7 +104,7 @@ fn cmd_bhd(args: &ArgMatches) -> i32 {
         Err(e) => { eprintln!("Failed to load namefile: {:?}", e); return 1 }
     };
 
-    return match unpackers::bhd::extract_bhd(file_path, &names, output_path) {
+    match unpackers::bhd::extract_bhd(file_path, &names, output_path) {
         Err(e) => { eprintln!("Failed to extract BHD: {:?}", e); 1 }
         _ => { 0 }
     }
@@ -173,49 +158,15 @@ fn cmd_hash(args: &ArgMatches) -> i32 {
 
 fn cmd_dcx(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
-    let mut output_path_valid = false;
-    let mut output_path: String = match args.value_of("output") {
-        Some(s) => { output_path_valid = true; s.to_string() }
-        _ => { String::with_capacity(file_path.len()) }
-    };
-    // If no output path is provided, try to strip the file extension.
-    if !output_path_valid {
-        if let Some(pb) = utils::fs::strip_extension(&path::PathBuf::from(&file_path)) {
-            if let Some(s) = pb.to_str() {
-                output_path.push_str(s);
-                output_path_valid = true;
-            }
-        }
-    }
-    if !output_path_valid {
-        eprintln!("Could not determine a valid output path.");
-        return 1
-    }
-    // If the output path is a dir, try to strip extension and place the file there.
-    if path::Path::new(&output_path).is_dir() {
-        output_path_valid = false;
-        let mut out_pb = path::PathBuf::from(&output_path);
-        if let Some(file_pb) = utils::fs::strip_extension(&path::PathBuf::from(&file_path)) {
-            if let Some(file_name) = file_pb.file_name() {
-                if let Some(file_name_str) = file_name.to_str() {
-                    out_pb.push(file_name_str);
-                    if let Some(s) = out_pb.as_path().to_str() {
-                        output_path.clear();
-                        output_path.push_str(s);
-                        output_path_valid = true;
-                    }
-                }
-            }
-        }
-    }
-    if !output_path_valid {
-        eprintln!("Could not determine a valid output path.");
-        return 1
-    }
+    let output_path: String =
+        match unpackers::dcx::get_decompressed_path(file_path, args.value_of("output")) {
+            Some(p) => p,
+            _ => { return 1 }
+        };
 
     match unpackers::dcx::extract_dcx(file_path, &output_path) {
-        Err(e) => { eprintln!("Failed to extract DCX: {:?}", e); return 1 }
-        _ => { 0 }
+        Err(e) => { eprintln!("Failed to extract DCX: {:?}", e); 1 }
+        _ => 0
     }
 }
 
@@ -223,9 +174,11 @@ fn cmd_bnd(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
     let output_path: &str = args.value_of("output").unwrap();
     let overwrite: bool = args.is_present("overwrite");
-    match unpackers::bnd::extract_bnd_file(file_path, output_path, overwrite) {
-        Err(e) => { eprintln!("Failed to extract BND: {:?}", e); return 1 }
-        _ => { 0 }
+    let decompress: bool = args.is_present("decompress");
+
+    match unpackers::bnd::extract_bnd_file(file_path, output_path, overwrite, decompress) {
+        Err(e) => { eprintln!("Failed to extract BND: {:?}", e); 1 }
+        _ => 0
     }
 }
 
@@ -234,7 +187,7 @@ fn cmd_bhf(args: &ArgMatches) -> i32 {
     let output_path: Option<&str> = args.value_of("output");
     let overwrite: bool = args.is_present("overwrite");
     match unpackers::bhf::extract_bhf_file(file_path, output_path, overwrite) {
-        Err(e) => { eprintln!("Failed to extract BHF: {:?}", e); return 1 }
-        _ => { 0 }
+        Err(e) => { eprintln!("Failed to extract BHF: {:?}", e); 1 }
+        _ => 0
     }
 }

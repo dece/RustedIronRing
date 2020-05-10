@@ -51,8 +51,9 @@ Features
 --------
 
 - BHD5 / BDT: extraction from disk to disk.
-- DCX: decompression from disk to disk.
-- BND (v3): extraction from disk/memory to disk/memory.
+- DCX: decompression from disk to disk/memory.
+- BND (v3): extraction from disk/memory to disk/memory, optionally decompress
+    from DCX.
 - BHF (v3): extraction from disk/memory to disk/memory.
 
 Repacking is not supported, maybe one day. It is not that useful when using
