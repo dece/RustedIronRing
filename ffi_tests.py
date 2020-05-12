@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Import hash from the rir dynamic lib."""
 
-import ctypes
-import sys
+import pyironring
 
 
-lib = ctypes.cdll.LoadLibrary(sys.argv[1])
+path = "/chr/c0000.anibnd.dcx"
+hash_u32 = pyironring.name_hashes.hash(path)
+print('Hash for path "{}" is {:X}'.format(path, hash_u32))
 
-s = ctypes.c_char_p(b"/chr/c0000.anibnd.dcx")
-lib.nam_hash.restype = ctypes.c_uint32
-h = lib.nam_hash(s)
-print(hex(h))
+hash_u32_str = pyironring.name_hashes.hash_as_string(hash_u32)
+print("Formatted by Rust: {}".format(hash_u32_str))
 
-lib.nam_hash_as_string.restype = ctypes.c_char_p
-h_str = lib.nam_hash_as_string(h)
-print(h_str)
+hm = pyironring.name_hashes.load_name_map("res/namefile.txt")
+#print("Hash map for DS1 names: {}".format(hm))
+wrong_hm = pyironring.name_hashes.load_name_map("res/nonexistent.txt")
+#print("Loading a non-existent names: {}".format(wrong_hm))

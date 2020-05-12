@@ -5,17 +5,19 @@ authors = ["Dece <shgck@pistache.land>"]
 edition = "2018"
 
 [lib]
-name = "rir"
+name = "ironring"
 crate-type = ["lib", "cdylib"]
 
 [[bin]]
-name = "ironring"
+name = "rir"
 
 [dependencies]
 clap = "2.33"
 encoding_rs = "0.8"
 flate2 = "1.0"
-libc = "0.2"
 nom = "5"
 num-bigint = "0.2"
 num-traits = "0.2"
+
+[workspace]
+members = ["bindings/python"]

@@ -5,11 +5,11 @@ use std::process;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
-use rir::{name_hashes, unpackers};
+use ironring::{name_hashes, unpackers};
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
-    let matches = App::new("Iron Ring")
+    let matches = App::new("Rusted Iron Ring")
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(SubCommand::with_name("bhd")
             .about("Extracts BHD/BDT contents")

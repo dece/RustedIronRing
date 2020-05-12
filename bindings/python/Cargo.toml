@@ -1,0 +1,13 @@
+[package]
+name = "pyironring"
+version = "0.1.0"
+authors = ["dece <shgck@pistache.land>"]
+edition = "2018"
+
+[lib]
+name = "pyironring"
+crate-type = ["cdylib"]
+
+[dependencies]
+rusted_iron_ring = { path = "../.." }
+pyo3 = { version = "0.9", features = ["extension-module"] }
