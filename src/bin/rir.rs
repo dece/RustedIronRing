@@ -73,6 +73,11 @@ fn main() {
             .arg(Arg::with_name("overwrite")
                 .help("Overwrite existing files")
                 .short("f").long("force").takes_value(false).required(false)))
+        .subcommand(SubCommand::with_name("paramdef")
+            .about("TODO")
+            .arg(Arg::with_name("file")
+                .help("PARAMDEF file path")
+                .takes_value(true).required(true)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -82,6 +87,7 @@ fn main() {
         ("dcx", Some(s)) => { cmd_dcx(s) }
         ("bnd", Some(s)) => { cmd_bnd(s) }
         ("bhf", Some(s)) => { cmd_bhf(s) }
+        ("paramdef", Some(s)) => { cmd_paramdef(s) }
         _ => { 0 }
     })
 }
@@ -189,5 +195,13 @@ fn cmd_bhf(args: &ArgMatches) -> i32 {
     match unpackers::bhf::extract_bhf_file(file_path, output_path, overwrite) {
         Err(e) => { eprintln!("Failed to extract BHF: {:?}", e); 1 }
         _ => 0
+    }
+}
+
+fn cmd_paramdef(args: &ArgMatches) -> i32 {
+    let file_path: &str = args.value_of("file").unwrap();
+    match unpackers::paramdef::load_paramdef_file(file_path) {
+        Ok(paramdef) => { unpackers::paramdef::print_paramdef(&paramdef); 0 }
+        Err(e) => { eprintln!("Failed to load PARAMDEF: {:?}", e); 1 }
     }
 }

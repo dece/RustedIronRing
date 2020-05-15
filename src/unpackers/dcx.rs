@@ -81,15 +81,13 @@ pub fn get_decompressed_path(dcx_path: &str, output_path: Option<&str>) -> Optio
     if path::Path::new(&output_path).is_dir() {
         output_path_valid = false;
         if let Some(file_pb) = utils_fs::strip_extension(&path::PathBuf::from(&dcx_path)) {
-            if let Some(file_name) = file_pb.file_name() {
-                if let Some(file_name_str) = file_name.to_str() {
-                    let mut out_pb = path::PathBuf::from(&output_path);
-                    out_pb.push(file_name_str);
-                    if let Some(s) = out_pb.as_path().to_str() {
-                        output_path.clear();
-                        output_path.push_str(s);
-                        output_path_valid = true;
-                    }
+            if let Some(file_name) = file_pb.file_name().and_then(|s| s.to_str()) {
+                let mut out_pb = path::PathBuf::from(&output_path);
+                out_pb.push(file_name);
+                if let Some(s) = out_pb.as_path().to_str() {
+                    output_path.clear();
+                    output_path.push_str(s);
+                    output_path_valid = true;
                 }
             }
         }

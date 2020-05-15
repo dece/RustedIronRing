@@ -16,8 +16,8 @@ Usage
 
 The project contains 2 artefacts:
 
-- `librir`, a library containing all the parsing/unpacking features implemented.
-- `ironring`, an executable to use main lib features from the CLI.
+- `ironring`, a library with all the parsing/unpacking features implemented.
+- `rir`, an executable to use main lib features from the CLI.
 
 The goal is to make the lib compatible with FFI tools such as Python's ctypes,
 to ship a dynamic lib accessible for any language to easily script tasks and
@@ -26,10 +26,10 @@ ideas, but we're not there yet.
 Ironring usage:
 
 ```
-Iron Ring
+Rusted Iron Ring
 
 USAGE:
-    ironring [SUBCOMMAND]
+    rir [SUBCOMMAND]
 
 FLAGS:
     -h, --help       Prints help information
@@ -63,6 +63,12 @@ Repacking is not supported, maybe one day. It is not that useful when using
 [udsfm]: https://github.com/HotPocketRemix/UnpackDarkSoulsForModding
 [yabber]: https://github.com/JKAnderson/Yabber
 [sieglib]: https://github.com/Dece/DarkSoulsDev/tree/master/Programs/SiegLib
+
+There is a demo Python binding for some `name_hashes` features in the
+`bindings/python` dir, that uses [PyO3][pyo3] and thus requires nightly rustc to
+build.
+
+[pyo3]: https://pyo3.rs/
 
 
 
