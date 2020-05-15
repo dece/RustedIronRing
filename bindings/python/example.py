@@ -18,6 +18,8 @@ except ImportError:
 
 
 def name_hashes():
+    print_example_name("name_hashes examples")
+
     path = "/chr/c0000.anibnd.dcx"
     hash_u32 = pyironring.name_hashes.hash(path)
     print('Hash for path "{}" is {:X}'.format(path, hash_u32))
@@ -30,7 +32,15 @@ def name_hashes():
     try:
         pyironring.name_hashes.load_name_map("nonexistent.txt")
     except FileNotFoundError:
-        print("Received FileNotFoundError exception.")
+        print("Received expected FileNotFoundError exception.")
+
+
+def print_example_name(text):
+    try:
+        import termcolor
+        print(termcolor.colored(text, 'blue', attrs=['bold']))
+    except ImportError:
+        print(text)
 
 
 if __name__ == "__main__":
