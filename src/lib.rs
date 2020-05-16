@@ -20,4 +20,5 @@ pub mod unpackers {
 pub mod utils {
     pub mod bin;
     pub mod fs;
+    pub mod str;
 }

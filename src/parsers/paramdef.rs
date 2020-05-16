@@ -23,6 +23,7 @@ impl ParamdefHeader {
     pub fn use_be(&self) -> bool { use_be(self.endianness) }
     pub fn has_ofs_fields(&self) -> bool { has_ofs_fields(self.format_version) }
     pub fn has_64b_ofs_desc(&self) -> bool { self.format_version >= 201 }
+    pub fn can_have_bit_size(&self) -> bool { self.format_version >= 102 }
 }
 
 fn use_be(endianness: u8) -> bool { endianness == 0xFF }
@@ -80,7 +81,25 @@ pub struct ParamdefField {
     pub description: Option<String>,
 }
 
-pub union ParamdefEntryDescOffset {
+impl ParamdefField {
+    /// Return the bit size for this field, or 0 if unknown.
+    ///
+    /// It is contained in the internal name, unsure if there is a
+    /// better way to get it.
+    pub fn bit_size(&self) -> usize {
+        if let Some(name) = &self.internal_name {
+           if !name.contains(":") {
+               return 0
+           }
+           if let Some(bit_size_str) = name.split(":").last().and_then(|s| Some(s.trim())) {
+               return bit_size_str.parse::<usize>().unwrap_or(0)
+           }
+        }
+        0
+    }
+}
+
+pub union ParamdefFieldDescOffset {
     ofs32: u32,
     ofs64: u64,
 }
@@ -166,5 +185,5 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Paramdef> {
         field.description = Some(sjis_to_string_lossy(sjis_desc));
     }
 
-    Ok((i, Paramdef { header, fields: fields }))
+    Ok((i, Paramdef { header, fields }))
 }
