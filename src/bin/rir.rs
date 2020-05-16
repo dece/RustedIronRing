@@ -74,7 +74,7 @@ fn main() {
                 .help("Overwrite existing files")
                 .short("f").long("force").takes_value(false).required(false)))
         .subcommand(SubCommand::with_name("paramdef")
-            .about("TODO")
+            .about("Print PARAMDEF contents")
             .arg(Arg::with_name("file")
                 .help("PARAMDEF file path")
                 .takes_value(true).required(true)))

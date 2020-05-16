@@ -15,10 +15,22 @@ pub fn load_paramdef(paramdef_data: &[u8]) -> Result<paramdef::Paramdef, UnpackE
     match paramdef::parse(paramdef_data) {
         Ok((_, result)) => Ok(result),
         Err(NomError(e)) | Err(NomFailure(e)) => Err(UnpackError::parsing_err("PARAMDEF", e.1)),
-        e => Err(UnpackError::Unknown(format!("Unknown error: {:?}", e))),
+        Err(e) => Err(UnpackError::Unknown(format!("Unknown error: {:?}", e))),
     }
 }
 
 pub fn print_paramdef(paramdef: &paramdef::Paramdef) {
-    println!("{:?}", paramdef);
+    println!("{} -- {} entries", paramdef.header.param_name, paramdef.header.num_entries);
+    println!("Data version: {}", paramdef.header.data_version);
+    println!("Format version: {}", paramdef.header.format_version);
+
+    for entry in &paramdef.entries {
+        println!("  - {} ({})", entry.display_name, entry.display_type);
+        if let Some(name) = &entry.internal_name {
+            println!("    Internal name and type: {}, {}", name, entry.internal_type);
+        }
+        if let Some(desc) = &entry.description {
+            println!("    Description: {}", desc);
+        }
+    }
 }

@@ -155,10 +155,9 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Bnd> {
         for info in &mut file_infos {
             let ofs_path = info.ofs_path as usize;
             let (_, sjis_path) = take_cstring(&full_file[ofs_path..])?;
-            info.path = sjis_to_string(sjis_path);
-            if info.path.is_none() {
-                eprintln!("Failed to parse path: {:?}", sjis_path);
-            }
+            info.path = sjis_to_string(sjis_path).or_else(|| {
+                eprintln!("Failed to parse path: {:?}", sjis_path); None
+            });
         }
     }
     Ok((full_file, Bnd { header, file_infos }))
