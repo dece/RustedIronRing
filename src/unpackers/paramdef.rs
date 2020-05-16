@@ -20,17 +20,21 @@ pub fn load_paramdef(paramdef_data: &[u8]) -> Result<paramdef::Paramdef, UnpackE
 }
 
 pub fn print_paramdef(paramdef: &paramdef::Paramdef) {
-    println!("{} -- {} entries", paramdef.header.param_name, paramdef.header.num_entries);
-    println!("Data version: {}", paramdef.header.data_version);
-    println!("Format version: {}", paramdef.header.format_version);
+    println!("{} -- ver. {} -- format ver. {} -- {} fields",
+        paramdef.header.param_name,
+        paramdef.header.data_version, paramdef.header.format_version,
+        paramdef.header.num_fields);
 
-    for entry in &paramdef.entries {
-        println!("  - {} ({})", entry.display_name, entry.display_type);
-        if let Some(name) = &entry.internal_name {
-            println!("    Internal name and type: {}, {}", name, entry.internal_type);
-        }
-        if let Some(desc) = &entry.description {
+    for field in &paramdef.fields {
+        println!("  - [{}] {} ({}) {} ({}, {} bytes)",
+            field.sort_id, field.display_name,
+            field.internal_name.as_ref().unwrap_or(&String::from("<noname>")),
+            field.display_type, field.internal_type, field.byte_count);
+        println!("    Values: default {}, range [{}, {}], inc {}",
+            field.default_value, field.min_value, field.max_value, field.increment);
+        if let Some(desc) = &field.description {
             println!("    Description: {}", desc);
         }
+        println!("    Edit flags: {:X}", field.edit_flags);
     }
 }
