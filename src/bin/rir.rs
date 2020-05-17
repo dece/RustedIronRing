@@ -78,6 +78,14 @@ fn main() {
             .arg(Arg::with_name("file")
                 .help("PARAMDEF file path")
                 .takes_value(true).required(true)))
+        .subcommand(SubCommand::with_name("param")
+            .about("TODO")
+            .arg(Arg::with_name("file")
+                .help("PARAM file path")
+                .takes_value(true).required(true))
+            .arg(Arg::with_name("paramdef")
+                .help("PARAMDEF file path")
+                .short("d").long("def").takes_value(true).required(false)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -88,6 +96,7 @@ fn main() {
         ("bnd", Some(s)) => { cmd_bnd(s) }
         ("bhf", Some(s)) => { cmd_bhf(s) }
         ("paramdef", Some(s)) => { cmd_paramdef(s) }
+        ("param", Some(s)) => { cmd_param(s) }
         _ => { 0 }
     })
 }
@@ -203,5 +212,13 @@ fn cmd_paramdef(args: &ArgMatches) -> i32 {
     match unpackers::paramdef::load_paramdef_file(file_path) {
         Ok(paramdef) => { unpackers::paramdef::print_paramdef(&paramdef); 0 }
         Err(e) => { eprintln!("Failed to load PARAMDEF: {:?}", e); 1 }
+    }
+}
+
+fn cmd_param(args: &ArgMatches) -> i32 {
+    let file_path: &str = args.value_of("file").unwrap();
+    match unpackers::param::load_param_file(file_path) {
+        Ok(param) => { unpackers::param::print_param(&param); 0 }
+        Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
     }
 }

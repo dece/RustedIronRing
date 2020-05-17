@@ -7,6 +7,7 @@ pub mod parsers {
     pub mod bnd;
     pub mod common;
     pub mod dcx;
+    pub mod param;
     pub mod paramdef;
 }
 pub mod unpackers {
@@ -15,6 +16,7 @@ pub mod unpackers {
     pub mod bnd;
     pub mod dcx;
     pub mod errors;
+    pub mod param;
     pub mod paramdef;
 }
 pub mod utils {
