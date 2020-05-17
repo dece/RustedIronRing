@@ -3,7 +3,7 @@ use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
 
-use crate::parsers::common::{sjis_to_string_lossy, take_cstring, take_cstring_from};
+use crate::parsers::common::{sjis_to_string_lossy, take_cstring, take_cstring_from, VarSizeInt};
 
 #[derive(Debug)]
 pub struct ParamdefHeader {
@@ -63,6 +63,7 @@ fn parse_header(i: &[u8]) -> IResult<&[u8], ParamdefHeader> {
     ))
 }
 
+#[derive(Debug)]
 pub struct ParamdefField {
     pub display_name: String,
     pub display_type: String,
@@ -73,7 +74,7 @@ pub struct ParamdefField {
     pub increment: f32,
     pub edit_flags: u32,
     pub byte_count: u32,
-    pub ofs_desc: ParamdefFieldDescOffset,
+    pub ofs_desc: VarSizeInt,
     pub internal_type: String,
     pub internal_name: Option<String>,
     pub sort_id: u32,
@@ -99,11 +100,6 @@ impl ParamdefField {
     }
 }
 
-pub union ParamdefFieldDescOffset {
-    ofs32: u32,
-    ofs64: u64,
-}
-
 fn parse_field<'a>(i: &'a[u8], header: &ParamdefHeader) -> IResult<&'a[u8], ParamdefField> {
     let (i, display_name) = take_cstring_from(i, 0x40)?;
     let (i, display_type) = take_cstring_from(i, 0x8)?;
@@ -118,10 +114,10 @@ fn parse_field<'a>(i: &'a[u8], header: &ParamdefHeader) -> IResult<&'a[u8], Para
 
     let (i, ofs_desc) = if header.format_version < 201 {
         let (i, o) = p_u32(i)?;
-        (i, ParamdefFieldDescOffset { ofs32: o })
+        (i, VarSizeInt { vu32: o })
     } else {
         let (i, o) = p_u64(i)?;
-        (i, ParamdefFieldDescOffset { ofs64: o })
+        (i, VarSizeInt { vu64: o })
     };
 
     let (i, internal_type) = take_cstring_from(i, 0x20)?;
@@ -156,6 +152,7 @@ fn parse_field<'a>(i: &'a[u8], header: &ParamdefHeader) -> IResult<&'a[u8], Para
     ))
 }
 
+#[derive(Debug)]
 pub struct Paramdef {
     pub header: ParamdefHeader,
     pub fields: Vec<ParamdefField>,
@@ -174,9 +171,9 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Paramdef> {
 
     for field in &mut fields {
         let ofs: usize = if header.has_64b_ofs_desc() {
-            unsafe { field.ofs_desc.ofs64 as usize }
+            unsafe { field.ofs_desc.vu64 as usize }
         } else {
-            unsafe { field.ofs_desc.ofs32 as usize }
+            unsafe { field.ofs_desc.vu32 as usize }
         };
         if ofs == 0 {
             continue

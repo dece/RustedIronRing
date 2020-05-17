@@ -218,7 +218,7 @@ fn cmd_paramdef(args: &ArgMatches) -> i32 {
 fn cmd_param(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
     match unpackers::param::load_param_file(file_path) {
-        Ok(param) => { unpackers::param::print_param(&param); 0 }
+        Ok(param) => { unpackers::param::print_param_no_data(&param); 0 }
         Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
     }
 }

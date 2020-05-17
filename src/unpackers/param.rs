@@ -5,6 +5,7 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 use crate::parsers::param;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
+use crate::utils::str as utils_str;
 
 pub fn load_param_file(param_path: &str) -> Result<param::Param, UnpackError> {
     let param_data = utils_fs::open_file_to_vec(path::Path::new(param_path))?;
@@ -19,6 +20,11 @@ pub fn load_param(param_data: &[u8]) -> Result<param::Param, UnpackError> {
     }
 }
 
-pub fn print_param(param: &param::Param) {
-    println!("{} -- {} rows", param.header.param_type, param.header.num_rows);
+pub fn print_param_no_data(param: &param::Param) {
+    println!("{} -- {}", param.header.param_type,
+        utils_str::n_plural(param.header.num_rows as i32, "row", "rows"));
+
+    for row in &param.rows {
+        println!("  - [{}] {}", row.id, row.name.as_ref().unwrap_or(&String::from("<noname>")));
+    }
 }

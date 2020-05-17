@@ -1,3 +1,5 @@
+use std::fmt;
+
 use encoding_rs::SHIFT_JIS;
 use nom::IResult;
 use nom::bytes::complete::take_while;
@@ -28,6 +30,19 @@ pub fn sjis_to_string(i: &[u8]) -> Option<String> {
 /// Decode a Shift JIS encoded byte slice or hex representation.
 pub fn sjis_to_string_lossy(i: &[u8]) -> String {
     sjis_to_string(i).unwrap_or(format!("{:x?}", i))
+}
+
+/// Represent an integer that can be 32 or 64 bits,
+/// depending on the platform and flags used.
+pub union VarSizeInt {
+    pub vu32: u32,
+    pub vu64: u64,
+}
+
+impl fmt::Debug for VarSizeInt {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "VarSizeInt: {{ {}: u32, {}: u64 }}", unsafe { self.vu32 }, unsafe { self.vu64 })
+    }
 }
 
 #[cfg(test)]
