@@ -123,7 +123,7 @@ pub fn load_bhf_file(bhf_path: &str) -> Result<bhf::Bhf, UnpackError> {
     load_bhf(&bhf_data)
 }
 
-/// Load a BHF file from a bytes slice.
+/// Load a BHF file from a byte slice.
 pub fn load_bhf(bhf_data: &[u8]) -> Result<bhf::Bhf, UnpackError> {
     match bhf::parse(&bhf_data) {
         Ok((_, bhf)) => Ok(bhf),

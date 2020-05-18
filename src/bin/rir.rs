@@ -217,8 +217,21 @@ fn cmd_paramdef(args: &ArgMatches) -> i32 {
 
 fn cmd_param(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
-    match unpackers::param::load_param_file(file_path) {
-        Ok(param) => { unpackers::param::print_param_no_data(&param); 0 }
-        Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
+
+    if let Some(paramdef_path) = args.value_of("paramdef") {
+        match unpackers::paramdef::load_paramdef_file(paramdef_path) {
+            Ok(paramdef) => {
+                match unpackers::param::load_param_file(file_path, Some(&paramdef)) {
+                    Ok(param) => { unpackers::param::print_param(&param); 0 }
+                    Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
+                }
+            }
+            Err(e) => { eprintln!("Failed to load PARAMDEF: {:?}", e); 1 }
+        }
+    } else {
+        match unpackers::param::load_param_file(file_path, None) {
+            Ok(param) => { unpackers::param::print_param_no_data(&param);  0 }
+            Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
+        }
     }
 }

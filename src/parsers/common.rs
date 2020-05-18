@@ -39,6 +39,13 @@ pub union VarSizeInt {
     pub vu64: u64,
 }
 
+impl VarSizeInt {
+    /// Set u64 value if condition is true, else the u32 as u64.
+    pub fn u64_if(&self, c: bool) -> u64 {
+        if c { unsafe { self.vu64 } } else { unsafe { self.vu32 as u64 } }
+    }
+}
+
 impl fmt::Debug for VarSizeInt {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "VarSizeInt: {{ {}: u32, {}: u64 }}", unsafe { self.vu32 }, unsafe { self.vu64 })

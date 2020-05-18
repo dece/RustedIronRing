@@ -5,6 +5,7 @@ use nom::number::complete::*;
 use nom::sequence::tuple;
 
 use crate::parsers::common::{sjis_to_string, take_cstring, take_cstring_from, VarSizeInt};
+use crate::parsers::paramdef;
 use crate::utils::bin::has_flag;
 
 const FLAGS2D_UNK1: u8          = 0b00000001;
@@ -103,17 +104,7 @@ pub struct ParamRow {
     pub ofs_data: VarSizeInt,
     pub ofs_name: VarSizeInt,
     pub name: Option<String>,
-}
-
-impl ParamRow {
-    /// Get a u64 for the name offset, regardless of the format.
-    pub fn get_ofs_name(&self, header: &ParamHeader) -> u64 {
-        if header.has_u64_ofs_data() {
-           unsafe { self.ofs_name.vu64 }
-        } else {
-           unsafe { self.ofs_name.vu32 as u64 }
-        }
-    }
+    pub data: Vec<u8>,
 }
 
 fn parse_row<'a>(i: &'a[u8], header: &ParamHeader) -> IResult<&'a[u8], ParamRow> {
@@ -128,7 +119,7 @@ fn parse_row<'a>(i: &'a[u8], header: &ParamHeader) -> IResult<&'a[u8], ParamRow>
         (i, (id, VarSizeInt { vu32: ofs_data }, VarSizeInt { vu32: ofs_name }))
     };
 
-    Ok((i, ParamRow { id, ofs_data, ofs_name, name: None }))
+    Ok((i, ParamRow { id, ofs_data, ofs_name, name: None, data: vec!() }))
 }
 
 #[derive(Debug)]
@@ -137,7 +128,7 @@ pub struct Param {
     pub rows: Vec<ParamRow>,
 }
 
-pub fn parse(i: &[u8]) -> IResult<&[u8], Param> {
+pub fn parse<'a>(i: &'a[u8], paramdef: Option<&paramdef::Paramdef>) -> IResult<&'a[u8], Param> {
     let full_file = i;
     let (i, mut header) = parse_header(i)?;
     if header.has_ofs_string_name() && header.ofs_name.is_some() {
@@ -149,13 +140,25 @@ pub fn parse(i: &[u8]) -> IResult<&[u8], Param> {
     let (i, mut rows) = count(|i| parse_row(i, &header), header.num_rows as usize)(i)?;
 
     for row in &mut rows {
-        let ofs_name = row.get_ofs_name(&header) as usize;
+        let ofs_name = row.ofs_name.u64_if(header.has_u64_ofs_data()) as usize;
         if ofs_name != 0 {
             let (_, name) = take_cstring(&full_file[ofs_name..])?;
             row.name = sjis_to_string(name).or_else(|| {
                 eprintln!("Can't parse row name: {:?}", name);
                 None
             });
+        }
+    }
+
+    if paramdef.is_some() {
+        let row_size = paramdef.unwrap().row_size();
+        for row in &mut rows {
+            let ofs_data = row.ofs_data.u64_if(header.has_u64_ofs_data()) as usize;
+            if ofs_data == 0 {
+                continue
+            }
+            let ofs_data_end = ofs_data + row_size;
+            row.data = full_file[ofs_data..ofs_data_end].to_vec();
         }
     }
 
