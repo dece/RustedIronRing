@@ -158,6 +158,23 @@ pub struct Paramdef {
     pub fields: Vec<ParamdefField>,
 }
 
+impl Paramdef {
+    pub fn row_size(&self) -> usize {
+        let mut num_bits: usize = 0;
+        self.fields.iter().map(|field| {
+            match field.bit_size() {
+                0 => field.byte_count as usize,
+                n => {
+                    num_bits += n;
+                    let num_bytes = num_bits / 8;
+                    num_bits %= 8;
+                    num_bytes
+                }
+            }
+        }).sum()
+    }
+}
+
 pub fn parse(i: &[u8]) -> IResult<&[u8], Paramdef> {
     let full_file = i;
     let (i, header) = parse_header(i)?;

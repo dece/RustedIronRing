@@ -20,41 +20,41 @@ pub fn load_paramdef(paramdef_data: &[u8]) -> Result<paramdef::Paramdef, UnpackE
     }
 }
 
-pub fn print_paramdef(paramdef: &paramdef::Paramdef) {
-    println!("{} -- ver. {} -- format ver. {} -- {} fields",
+pub fn print_paramdef_intro(paramdef: &paramdef::Paramdef) {
+    println!(
+        "{} -- ver. {} -- format ver. {} -- {} fields -- {} per row",
         paramdef.header.param_name,
         paramdef.header.data_version, paramdef.header.format_version,
-        paramdef.header.num_fields);
+        paramdef.header.num_fields,
+        utils_str::n_bytes_pluralise(paramdef.row_size() as i32)
+    );
+}
 
-    let mut row_size = 0;
-    let mut bit_count = 0;
+pub fn print_paramdef(paramdef: &paramdef::Paramdef) {
+    print_paramdef_intro(paramdef);
     for field in &paramdef.fields {
-        let bit_size = field.bit_size();
-        let size_str = match bit_size {
-            0 => utils_str::n_plural(field.byte_count as i32, "byte", "bytes"),
-            x => utils_str::n_plural(x as i32, "bit", "bits")
+        let size_str = match field.bit_size() {
+            0 => utils_str::n_bytes_pluralise(field.byte_count as i32),
+            x => utils_str::n_pluralise(x as i32, "bit", "bits")
         };
-
-        println!("  - [{}] {} ({}) {} ({}, {})",
-            field.sort_id, field.display_name,
+        println!(
+            "  - [{}] {} ({}) {} ({}, {})",
+            field.sort_id,
+            field.display_name,
             field.internal_name.as_ref().unwrap_or(&String::from("<noname>")),
-            field.display_type, field.internal_type, size_str);
-        println!("    Values: default {}, range [{}, {}], inc {}",
-            field.default_value, field.min_value, field.max_value, field.increment);
+            field.display_type,
+            field.internal_type,
+            size_str
+        );
+        println!(
+            "    Values: default {}, range [{}, {}], inc {}",
+            field.default_value,
+            field.min_value,
+            field.max_value,
+            field.increment
+        );
         if let Some(desc) = &field.description {
             println!("    Description: {}", desc);
         }
-
-        if bit_size != 0 {
-            bit_count += bit_size;
-            while bit_count >= 8 {
-                bit_count -= 8;
-                row_size += 1;
-            }
-        } else {
-            row_size += field.byte_count;
-        }
     }
-
-    println!("Size per row: {}", utils_str::n_plural(row_size as i32, "byte", "bytes"));
 }
