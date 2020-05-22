@@ -222,7 +222,7 @@ fn cmd_param(args: &ArgMatches) -> i32 {
         match unpackers::paramdef::load_paramdef_file(paramdef_path) {
             Ok(paramdef) => {
                 match unpackers::param::load_param_file(file_path, Some(&paramdef)) {
-                    Ok(param) => { unpackers::param::print_param(&param); 0 }
+                    Ok(param) => { unpackers::param::print_param_with_def(&param, &paramdef); 0 }
                     Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
                 }
             }
@@ -230,7 +230,7 @@ fn cmd_param(args: &ArgMatches) -> i32 {
         }
     } else {
         match unpackers::param::load_param_file(file_path, None) {
-            Ok(param) => { unpackers::param::print_param_no_data(&param);  0 }
+            Ok(param) => { unpackers::param::print_param(&param);  0 }
             Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
         }
     }

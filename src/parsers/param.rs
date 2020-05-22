@@ -1,3 +1,5 @@
+use std::fmt::{self, Debug};
+
 use nom::IResult;
 use nom::bytes::complete::take;
 use nom::multi::count;
@@ -6,7 +8,7 @@ use nom::sequence::tuple;
 
 use crate::parsers::common::{sjis_to_string, take_cstring, take_cstring_from, VarSizeInt};
 use crate::parsers::paramdef;
-use crate::utils::bin::has_flag;
+use crate::utils::bin::{has_flag, mask};
 
 const FLAGS2D_UNK1: u8          = 0b00000001;
 const FLAGS2D_32B_OFS_DATA: u8  = 0b00000010;
@@ -104,7 +106,35 @@ pub struct ParamRow {
     pub ofs_data: VarSizeInt,
     pub ofs_name: VarSizeInt,
     pub name: Option<String>,
-    pub data: Vec<u8>,
+    pub data: Vec<ParamRowValue>,
+}
+
+#[derive(strum_macros::IntoStaticStr)]
+pub enum ParamRowValue {
+    S8(i8), U8(u8), S16(i16), U16(u16), S32(i32), U32(u32), F32(f32), UNK(Vec<u8>)
+}
+
+impl fmt::Debug for ParamRowValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name: &str = self.into();
+        write!(f, "{}: {}", name, self)
+    }
+}
+
+// Could be probably be done better with a macro...
+impl fmt::Display for ParamRowValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParamRowValue::S8(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::U8(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::S16(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::U16(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::S32(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::U32(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::F32(i) => fmt::Display::fmt(&i, f),
+            ParamRowValue::UNK(i) => fmt::Debug::fmt(&i, f),
+        }
+    }
 }
 
 fn parse_row<'a>(i: &'a[u8], header: &ParamHeader) -> IResult<&'a[u8], ParamRow> {
@@ -120,6 +150,83 @@ fn parse_row<'a>(i: &'a[u8], header: &ParamHeader) -> IResult<&'a[u8], ParamRow>
     };
 
     Ok((i, ParamRow { id, ofs_data, ofs_name, name: None, data: vec!() }))
+}
+
+fn parse_row_data<'a>(
+    i: &'a[u8],
+    header: &ParamHeader,
+    paramdef: &paramdef::Paramdef
+) -> IResult<&'a[u8], Vec<ParamRowValue>> {
+    let use_be = header.use_be();
+    let mut data = vec!();
+    let mut bitfield = 0u16;     // Current bitfield being parsed. u16 is largest handled type.
+    let mut remaining_bits = 0;  // Remaining bits in bitfield.
+    let mut data_slice = i;
+    for field in &paramdef.fields {
+        let bit_size = field.bit_size();
+        let value = if bit_size == 0 {
+            let (rest, value) = parse_row_value(data_slice, &field.display_type,
+                                                field.byte_count as usize, use_be)?;
+            data_slice = rest;
+            remaining_bits = 0;
+            value
+        } else {
+            // Bitfield parsing. If it's the first bitfield in a series, get the containing bytes
+            // in the bitfield var.
+            if remaining_bits == 0 {
+                let (rest, bf) = take(field.byte_count as usize)(data_slice)?;
+                bitfield = match field.display_type.as_str() {
+                    "u8" => { remaining_bits = 8; le_u8(bf).map(|(_, v)| v as u16)? }
+                    "dummy8" => { remaining_bits = 8; le_u8(bf).map(|(_, v)| v as u16)? }
+                    "u16" => {
+                        remaining_bits = 16;
+                        (if use_be { be_u16 } else { le_u16 }) (bf) .map(|(_, v)| v)?
+                    }
+                    e => panic!("Unhandled PARAMDEF type {}", e),
+                };
+                data_slice = rest;
+            }
+            // Parse masked bits.
+            let value = bitfield & mask(bit_size as usize) as u16;
+            // Shift bitfield so next values can be parsed directly with a bitmask.
+            bitfield >>= bit_size;
+            remaining_bits -= bit_size;
+            match field.display_type.as_str() {
+                "u8" => ParamRowValue::U8(value as u8),
+                "dummy8" => ParamRowValue::U8(value as u8),
+                "u16" => ParamRowValue::U16(value),
+                e => panic!("Unhandled PARAMDEF type {}", e),
+            }
+        };
+        data.push(value);
+    }
+    Ok((i, data))
+}
+
+fn parse_row_value<'a>(
+    i: &'a[u8],
+    type_str: &str,
+    num_bytes: usize,
+    use_be: bool
+) -> IResult<&'a[u8], ParamRowValue> {
+    Ok(match type_str {
+        "s8" => le_i8(i)
+            .map(|(i, v)| (i, ParamRowValue::S8(v)))?,
+        "u8" => le_u8(i)
+            .map(|(i, v)| (i, ParamRowValue::U8(v)))?,
+        "s16" => (if use_be { be_i16 } else { le_i16 }) (i)
+            .map(|(i, v)| (i, ParamRowValue::S16(v)))?,
+        "u16" => (if use_be { be_u16 } else { le_u16 }) (i)
+            .map(|(i, v)| (i, ParamRowValue::U16(v)))?,
+        "s32" => (if use_be { be_i32 } else { le_i32 }) (i)
+            .map(|(i, v)| (i, ParamRowValue::S32(v)))?,
+        "u32" => (if use_be { be_u32 } else { le_u32 }) (i)
+            .map(|(i, v)| (i, ParamRowValue::U32(v)))?,
+        "f32" => (if use_be { be_f32 } else { le_f32 }) (i)
+            .map(|(i, v)| (i, ParamRowValue::F32(v)))?,
+        _ => take(num_bytes)(i)
+            .map(|(i, v)| (i, ParamRowValue::UNK(v.to_vec())))?,
+    })
 }
 
 #[derive(Debug)]
@@ -151,14 +258,16 @@ pub fn parse<'a>(i: &'a[u8], paramdef: Option<&paramdef::Paramdef>) -> IResult<&
     }
 
     if paramdef.is_some() {
-        let row_size = paramdef.unwrap().row_size();
+        let def = paramdef.unwrap();
+        let row_size = def.row_size();
         for row in &mut rows {
             let ofs_data = row.ofs_data.u64_if(header.has_u64_ofs_data()) as usize;
             if ofs_data == 0 {
                 continue
             }
             let ofs_data_end = ofs_data + row_size;
-            row.data = full_file[ofs_data..ofs_data_end].to_vec();
+            let (_, data) = parse_row_data(&full_file[ofs_data..ofs_data_end], &header, &def)?;
+            row.data = data;
         }
     }
 

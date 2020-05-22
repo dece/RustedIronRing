@@ -18,6 +18,7 @@ flate2 = "1.0"
 nom = "5"
 num-bigint = "0.2"
 num-traits = "0.2"
+strum_macros = "0.18"
 
 [workspace]
 members = ["bindings/python"]

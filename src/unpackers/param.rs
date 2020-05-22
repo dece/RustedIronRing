@@ -35,6 +35,7 @@ pub fn load_param(
     }
 }
 
+/// Print a PARAM's name and number of rows.
 fn print_param_intro(param: &param::Param) {
     println!(
         "{} -- {}",
@@ -43,16 +44,23 @@ fn print_param_intro(param: &param::Param) {
     );
 }
 
-pub fn print_param_no_data(param: &param::Param) {
-    print_param_intro(param);
-    for row in &param.rows {
-        println!("  - [{}] {}", row.id, row.name.as_ref().unwrap_or(&String::from("<noname>")));
-    }
-}
-
+/// Print simple information about a PARAM.
 pub fn print_param(param: &param::Param) {
     print_param_intro(param);
     for row in &param.rows {
+        println!("  - [{}] {}", row.id, row.name.as_ref().unwrap_or(&String::from("<noname>")));
+        if row.data.len() > 0 {
+            println!("    {:?}", row.data);
+        }
+    }
+}
+
+/// Print a PARAM's data using PARAMDEF fields.
+pub fn print_param_with_def(param: &param::Param, paramdef: &paramdef::Paramdef) {
+    print_param_intro(param);
+    for row in &param.rows {
+
         println!("{:?}", row);
+
     }
 }

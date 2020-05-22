@@ -6,6 +6,11 @@ pub fn has_flag(i: u8, flag: u8) -> bool {
     i & flag == flag
 }
 
+/// Return a mask for this number of bits.
+pub fn mask(bit_size: usize) -> usize {
+    (1 << bit_size) - 1
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -15,5 +20,14 @@ mod test {
         assert!(has_flag(0x0, 0x0));
         assert!(has_flag(0x80, 0x80));
         assert!(!has_flag(0x80, 0x40));
+    }
+
+    #[test]
+    fn test_mask() {
+        assert_eq!(mask(1), 0b00000001);
+        assert_eq!(mask(2), 0b00000011);
+        assert_eq!(mask(4), 0b00001111);
+        assert_eq!(mask(8), 0b11111111);
+        assert_eq!(mask(15), 0b01111111_11111111);
     }
 }
