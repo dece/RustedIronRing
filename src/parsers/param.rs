@@ -9,6 +9,7 @@ use nom::sequence::tuple;
 use crate::parsers::common::{sjis_to_string, take_cstring, take_cstring_from, VarSizeInt};
 use crate::parsers::paramdef;
 use crate::utils::bin::{has_flag, mask};
+use crate::utils::str as utils_str;
 
 const FLAGS2D_UNK1: u8          = 0b00000001;
 const FLAGS2D_32B_OFS_DATA: u8  = 0b00000010;
@@ -37,6 +38,17 @@ impl ParamHeader {
     pub fn has_ofs_string_name(&self) -> bool { has_ofs_string_name(self.flags2D) }
     pub fn has_u32_ofs_data(&self) -> bool { has_u32_ofs_data(self.flags2D) }
     pub fn has_u64_ofs_data(&self) -> bool { has_u64_ofs_data(self.flags2D) }
+}
+
+impl fmt::Display for ParamHeader {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} -- {}",
+            self.param_type,
+            utils_str::n_pluralise(self.num_rows as i32, "row", "rows")
+        )
+    }
 }
 
 fn use_be(endianness: u8) -> bool { endianness == 0xFF }
@@ -109,6 +121,12 @@ pub struct ParamRow {
     pub data: Vec<ParamRowValue>,
 }
 
+impl fmt::Display for ParamRow {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}] {}", self.id, self.name.as_ref().unwrap_or(&String::from("<noname>")))
+    }
+}
+
 #[derive(strum_macros::IntoStaticStr)]
 pub enum ParamRowValue {
     S8(i8), U8(u8), S16(i16), U16(u16), S32(i32), U32(u32), F32(f32), UNK(Vec<u8>)
@@ -152,6 +170,7 @@ fn parse_row<'a>(i: &'a[u8], header: &ParamHeader) -> IResult<&'a[u8], ParamRow>
     Ok((i, ParamRow { id, ofs_data, ofs_name, name: None, data: vec!() }))
 }
 
+/// Parse row data using field definitions from PARAMDEF.
 fn parse_row_data<'a>(
     i: &'a[u8],
     header: &ParamHeader,
@@ -163,10 +182,11 @@ fn parse_row_data<'a>(
     let mut remaining_bits = 0;  // Remaining bits in bitfield.
     let mut data_slice = i;
     for field in &paramdef.fields {
+        let type_str = &field.display_type;
+        let num_bytes = field.byte_count as usize;
         let bit_size = field.bit_size();
         let value = if bit_size == 0 {
-            let (rest, value) = parse_row_value(data_slice, &field.display_type,
-                                                field.byte_count as usize, use_be)?;
+            let (rest, value) = parse_row_value(data_slice, type_str, num_bytes, use_be)?;
             data_slice = rest;
             remaining_bits = 0;
             value
@@ -174,35 +194,23 @@ fn parse_row_data<'a>(
             // Bitfield parsing. If it's the first bitfield in a series, get the containing bytes
             // in the bitfield var.
             if remaining_bits == 0 {
-                let (rest, bf) = take(field.byte_count as usize)(data_slice)?;
-                bitfield = match field.display_type.as_str() {
-                    "u8" => { remaining_bits = 8; le_u8(bf).map(|(_, v)| v as u16)? }
-                    "dummy8" => { remaining_bits = 8; le_u8(bf).map(|(_, v)| v as u16)? }
-                    "u16" => {
-                        remaining_bits = 16;
-                        (if use_be { be_u16 } else { le_u16 }) (bf) .map(|(_, v)| v)?
-                    }
-                    e => panic!("Unhandled PARAMDEF type {}", e),
-                };
+                let (rest, bf) = parse_row_bitfield(data_slice, type_str, num_bytes, use_be)?;
                 data_slice = rest;
+                bitfield = bf;
+                remaining_bits = bit_size * 8;
             }
-            // Parse masked bits.
-            let value = bitfield & mask(bit_size as usize) as u16;
+            let value = parse_row_bitfield_value(bitfield, type_str, bit_size);
             // Shift bitfield so next values can be parsed directly with a bitmask.
             bitfield >>= bit_size;
             remaining_bits -= bit_size;
-            match field.display_type.as_str() {
-                "u8" => ParamRowValue::U8(value as u8),
-                "dummy8" => ParamRowValue::U8(value as u8),
-                "u16" => ParamRowValue::U16(value),
-                e => panic!("Unhandled PARAMDEF type {}", e),
-            }
+            value
         };
         data.push(value);
     }
     Ok((i, data))
 }
 
+/// Parse a single row value, using its type string.
 fn parse_row_value<'a>(
     i: &'a[u8],
     type_str: &str,
@@ -229,12 +237,51 @@ fn parse_row_value<'a>(
     })
 }
 
+/// Parse a bitfield unsigned int of the max handled size (u16).
+///
+/// Parsing is done using the type string. Whatever the size of the int
+/// is, place it in the max handled size to avoid maintaining one
+/// bitfield for each type.
+fn parse_row_bitfield<'a>(
+    bf: &'a[u8],
+    type_str: &str,
+    num_bytes: usize,
+    use_be: bool
+) -> IResult<&'a[u8], u16> {
+    let (rest, bf) = take(num_bytes)(bf)?;
+    let bitfield = match type_str {
+        "u8" => le_u8(bf).map(|(_, v)| v as u16)?,
+        "dummy8" => le_u8(bf).map(|(_, v)| v as u16)?,
+        "u16" => (if use_be { be_u16 } else { le_u16 })(bf).map(|(_, v)| v)?,
+        e => panic!("Unhandled PARAMDEF type {}", e),
+    };
+    Ok((rest, bitfield))
+}
+
+/// Parse a single row value (max u16) from a bitfield.
+fn parse_row_bitfield_value(bitfield: u16, type_str: &str, bit_size: usize) -> ParamRowValue {
+    let value = bitfield & mask(bit_size) as u16;
+    match type_str {
+        "u8" => ParamRowValue::U8(value as u8),
+        "dummy8" => ParamRowValue::U8(value as u8),
+        "u16" => ParamRowValue::U16(value),
+        e => panic!("Unhandled PARAMDEF type {}", e),
+    }
+}
+
 #[derive(Debug)]
 pub struct Param {
     pub header: ParamHeader,
     pub rows: Vec<ParamRow>,
 }
 
+impl fmt::Display for Param {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.header, f)
+    }
+}
+
+/// Parse PARAM data, using PARAMDEF info if provided.
 pub fn parse<'a>(i: &'a[u8], paramdef: Option<&paramdef::Paramdef>) -> IResult<&'a[u8], Param> {
     let full_file = i;
     let (i, mut header) = parse_header(i)?;

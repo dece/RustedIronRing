@@ -1,9 +1,12 @@
+use std::fmt;
+
 use nom::IResult;
 use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
 
 use crate::parsers::common::{sjis_to_string_lossy, take_cstring, take_cstring_from, VarSizeInt};
+use crate::utils::str as utils_str;
 
 #[derive(Debug)]
 pub struct ParamdefHeader {
@@ -100,6 +103,23 @@ impl ParamdefField {
     }
 }
 
+impl fmt::Display for ParamdefField {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} {} ({}, {}, {})",
+            self.display_name,
+            self.internal_name.as_ref().unwrap_or(&String::from("<noname>")),
+            self.display_type,
+            self.internal_type,
+            match self.bit_size() {
+                0 => utils_str::n_bytes_pluralise(self.byte_count as i32),
+                x => utils_str::n_pluralise(x as i32, "bit", "bits")
+            }
+        )
+    }
+}
+
 fn parse_field<'a>(i: &'a[u8], header: &ParamdefHeader) -> IResult<&'a[u8], ParamdefField> {
     let (i, display_name) = take_cstring_from(i, 0x40)?;
     let (i, display_type) = take_cstring_from(i, 0x8)?;
@@ -172,6 +192,20 @@ impl Paramdef {
                 }
             }
         }).sum()
+    }
+}
+
+impl fmt::Display for Paramdef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{} -- ver. {} -- format ver. {} -- {} fields -- {} per row",
+            self.header.param_name,
+            self.header.data_version,
+            self.header.format_version,
+            self.header.num_fields,
+            utils_str::n_bytes_pluralise(self.row_size() as i32)
+        )
     }
 }
 

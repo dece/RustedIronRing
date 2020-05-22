@@ -6,7 +6,6 @@ use crate::parsers::param;
 use crate::parsers::paramdef;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
-use crate::utils::str as utils_str;
 
 /// Load a PARAM file from disk.
 ///
@@ -35,20 +34,11 @@ pub fn load_param(
     }
 }
 
-/// Print a PARAM's name and number of rows.
-fn print_param_intro(param: &param::Param) {
-    println!(
-        "{} -- {}",
-        param.header.param_type,
-        utils_str::n_pluralise(param.header.num_rows as i32, "row", "rows")
-    );
-}
-
 /// Print simple information about a PARAM.
 pub fn print_param(param: &param::Param) {
-    print_param_intro(param);
+    println!("{}", param);
     for row in &param.rows {
-        println!("  - [{}] {}", row.id, row.name.as_ref().unwrap_or(&String::from("<noname>")));
+        println!("  - {}", row);
         if row.data.len() > 0 {
             println!("    {:?}", row.data);
         }
@@ -57,10 +47,13 @@ pub fn print_param(param: &param::Param) {
 
 /// Print a PARAM's data using PARAMDEF fields.
 pub fn print_param_with_def(param: &param::Param, paramdef: &paramdef::Paramdef) {
-    print_param_intro(param);
+    println!("{}", param);
     for row in &param.rows {
-
-        println!("{:?}", row);
-
+        println!("  - {}", row);
+        let mut desc = String::with_capacity(row.data.len() * 32);  // Rough estimate.
+        for (value, field_def) in row.data.iter().zip(paramdef.fields.iter()) {
+            desc.push_str(&format!("    - {}  =  {}\n", field_def, value));
+        }
+        println!("{}", desc.as_str());
     }
 }

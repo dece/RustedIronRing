@@ -79,7 +79,7 @@ fn main() {
                 .help("PARAMDEF file path")
                 .takes_value(true).required(true)))
         .subcommand(SubCommand::with_name("param")
-            .about("TODO")
+            .about("Parse PARAM contents")
             .arg(Arg::with_name("file")
                 .help("PARAM file path")
                 .takes_value(true).required(true))
@@ -217,21 +217,25 @@ fn cmd_paramdef(args: &ArgMatches) -> i32 {
 
 fn cmd_param(args: &ArgMatches) -> i32 {
     let file_path: &str = args.value_of("file").unwrap();
+    let paramdef_path: Option<&str> = args.value_of("paramdef");
 
-    if let Some(paramdef_path) = args.value_of("paramdef") {
-        match unpackers::paramdef::load_paramdef_file(paramdef_path) {
-            Ok(paramdef) => {
-                match unpackers::param::load_param_file(file_path, Some(&paramdef)) {
-                    Ok(param) => { unpackers::param::print_param_with_def(&param, &paramdef); 0 }
-                    Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
-                }
-            }
-            Err(e) => { eprintln!("Failed to load PARAMDEF: {:?}", e); 1 }
+    let paramdef = if paramdef_path.is_some() {
+        match unpackers::paramdef::load_paramdef_file(paramdef_path.unwrap()) {
+            Ok(paramdef) => Some(paramdef),
+            Err(e) => { eprintln!("Failed to load PARAMDEF: {:?}", e); return 1 }
         }
     } else {
-        match unpackers::param::load_param_file(file_path, None) {
-            Ok(param) => { unpackers::param::print_param(&param);  0 }
-            Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); 1 }
-        }
-    }
+        None
+    };
+
+    let param = match unpackers::param::load_param_file(file_path, paramdef.as_ref()) {
+        Ok(param) => param,
+        Err(e) => { eprintln!("Failed to load PARAM: {:?}", e); return 1 }
+    };
+
+    match paramdef {
+        Some(paramdef) => unpackers::param::print_param_with_def(&param, &paramdef),
+        None => unpackers::param::print_param(&param),
+    };
+    0
 }

@@ -5,7 +5,6 @@ use nom::Err::{Error as NomError, Failure as NomFailure};
 use crate::parsers::paramdef;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
-use crate::utils::str as utils_str;
 
 /// Load a PARAMDEF file from disk.
 ///
@@ -24,34 +23,11 @@ pub fn load_paramdef(paramdef_data: &[u8]) -> Result<paramdef::Paramdef, UnpackE
     }
 }
 
-/// Print brief data about a PARAMDEF.
-pub fn print_paramdef_intro(paramdef: &paramdef::Paramdef) {
-    println!(
-        "{} -- ver. {} -- format ver. {} -- {} fields -- {} per row",
-        paramdef.header.param_name,
-        paramdef.header.data_version, paramdef.header.format_version,
-        paramdef.header.num_fields,
-        utils_str::n_bytes_pluralise(paramdef.row_size() as i32)
-    );
-}
-
 /// Print verbose data about a PARAMDEF.
 pub fn print_paramdef(paramdef: &paramdef::Paramdef) {
-    print_paramdef_intro(paramdef);
+    println!("{}", paramdef);
     for field in &paramdef.fields {
-        let size_str = match field.bit_size() {
-            0 => utils_str::n_bytes_pluralise(field.byte_count as i32),
-            x => utils_str::n_pluralise(x as i32, "bit", "bits")
-        };
-        println!(
-            "  - [{}] {} ({}) {} ({}, {})",
-            field.sort_id,
-            field.display_name,
-            field.internal_name.as_ref().unwrap_or(&String::from("<noname>")),
-            field.display_type,
-            field.internal_type,
-            size_str
-        );
+        println!("  - {}", field);
         println!(
             "    Values: default {}, range [{}, {}], inc {}",
             field.default_value,
