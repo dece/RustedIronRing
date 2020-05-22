@@ -36,19 +36,23 @@ FLAGS:
     -V, --version    Prints version information
 
 SUBCOMMANDS:
-    bhd     Extracts BHD/BDT contents
-    bhds    Extracts all BHD/BDT content (alphabetically) in a folder
-    bhf     Extracts BHF/BDT contents
-    bnd     Extracts BND contents
-    dcx     Extracts and decompress DCX data
-    hash    Calculates hash for a string
-    help    Prints this message or the help of the given subcommand(s)
+    bhd         Extracts BHD/BDT contents
+    bhds        Extracts all BHD/BDT content (alphabetically) in a folder
+    bhf         Extracts BHF/BDT contents
+    bnd         Extracts BND contents
+    dcx         Extracts and decompress DCX data
+    hash        Calculates hash for a string
+    help        Prints this message or the help of the given subcommand(s)
+    param       Parses PARAM contents
+    paramdef    Prints PARAMDEF contents
 ```
 
 
 
 Features
 --------
+
+### Containers
 
 - BHD5 / BDT: extraction from disk to disk.
 - DCX: decompression from disk to disk/memory.
@@ -63,6 +67,15 @@ Repacking is not supported, maybe one day. It is not that useful when using
 [udsfm]: https://github.com/HotPocketRemix/UnpackDarkSoulsForModding
 [yabber]: https://github.com/JKAnderson/Yabber
 [sieglib]: https://github.com/Dece/DarkSoulsDev/tree/master/Programs/SiegLib
+
+### Files
+
+- PARAMDEF: parsing
+- PARAM: parsing, optionally with a PARAMDEF
+
+### Misc
+
+- Encrypted archive name hasher.
 
 There is a demo Python binding for some `name_hashes` features in the
 `bindings/python` dir, that uses [PyO3][pyo3] and thus requires nightly rustc to
