@@ -86,6 +86,14 @@ fn main() {
             .arg(Arg::with_name("paramdef")
                 .help("PARAMDEF file path")
                 .short("d").long("def").takes_value(true).required(false)))
+        .subcommand(SubCommand::with_name("dat")
+            .about("Extracts King's Field IV DAT contents")
+            .arg(Arg::with_name("file")
+                .help("DAT file path")
+                .takes_value(true).required(true))
+            .arg(Arg::with_name("output")
+                .help("Output directory")
+                .short("o").long("output").takes_value(true).required(true)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
@@ -97,6 +105,7 @@ fn main() {
         ("bhf", Some(s)) => { cmd_bhf(s) }
         ("paramdef", Some(s)) => { cmd_paramdef(s) }
         ("param", Some(s)) => { cmd_param(s) }
+        ("dat", Some(s)) => { cmd_dat(s) }
         _ => { 0 }
     })
 }
@@ -238,4 +247,13 @@ fn cmd_param(args: &ArgMatches) -> i32 {
         None => unpackers::param::print_param(&param),
     };
     0
+}
+
+fn cmd_dat(args: &ArgMatches) -> i32 {
+    let file_path: &str = args.value_of("file").unwrap();
+    let output_path: &str = args.value_of("output").unwrap();
+    match unpackers::dat::extract_dat_file(file_path, output_path) {
+        Err(e) => { eprintln!("Failed to extract DAT: {:?}", e); 1 }
+        _ => 0
+    }
 }

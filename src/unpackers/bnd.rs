@@ -43,7 +43,7 @@ pub fn extract_bnd(
     for file_info in &bnd.file_infos {
         // Extract all entries, print but ignore path errors.
         match extract_bnd_entry(file_info, bnd_data, output_dir, overwrite) {
-            Err(UnpackError::Naming(e)) => { eprintln!("{}", e) }
+            Err(UnpackError::Naming(e)) => eprintln!("{}", e),
             _ => {}
         }
     }

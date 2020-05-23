@@ -40,6 +40,7 @@ SUBCOMMANDS:
     bhds        Extracts all BHD/BDT content (alphabetically) in a folder
     bhf         Extracts BHF/BDT contents
     bnd         Extracts BND contents
+    dat         Extracts King's Field IV DAT contents
     dcx         Extracts and decompress DCX data
     hash        Calculates hash for a string
     help        Prints this message or the help of the given subcommand(s)
