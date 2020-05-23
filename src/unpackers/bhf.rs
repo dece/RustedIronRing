@@ -11,11 +11,9 @@ use crate::utils::fs as utils_fs;
 /// Extract BHF file and corresponding BDT contents to disk.
 ///
 /// Wraps around `extract_bhf` to load the BHF file from disk.
-/// If output_dir is none, entries will be extracted relatively to the
-/// BHF path.
 pub fn extract_bhf_file(
     bhf_path: &str,
-    output_dir: Option<&str>,
+    output_dir: &str,
     overwrite: bool
 ) -> Result<(), UnpackError> {
     let bhf = load_bhf_file(bhf_path)?;
@@ -30,15 +28,6 @@ pub fn extract_bhf_file(
     };
     let bdt_data = utils_fs::open_file_to_vec(&bdt_path)?;
 
-    let output_dir: &str = if output_dir.is_none() {
-        let parent = path::Path::new(bhf_path).parent();
-        if parent.is_none() {
-            return Err(UnpackError::Naming(format!("Can't find BHF parent dir: {:?}", bhf_path)))
-        }
-        parent.unwrap().to_str().unwrap()  // Conversion should not fail as bhf_path is valid.
-    } else {
-        output_dir.unwrap()
-    };
     extract_bhf(&bhf, &bdt_data, output_dir, overwrite)?;
     Ok(())
 }
