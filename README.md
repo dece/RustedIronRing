@@ -20,8 +20,6 @@ The project contains 2 artefacts:
 - `ironring`, a library with all the projects features implemented.
 - `rir`, an executable to use main lib features from the CLI.
 
-Ironring usage:
-
 ```
 Rusted Iron Ring
 
@@ -76,10 +74,9 @@ check out [SiegLib][sieglib].
 ### Misc
 
 - Encrypted archive name hasher.
-
-There is a demo Python binding for some `name_hashes` features in the
-`bindings/python` dir, that uses [PyO3][pyo3] and thus requires nightly rustc to
-build.
+- There is a demo Python binding for some `name_hashes` features in the
+    `bindings/python` dir, that uses [PyO3][pyo3] and thus requires nightly
+    rustc to build.
 
 [pyo3]: https://pyo3.rs/
 
