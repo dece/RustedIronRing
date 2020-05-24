@@ -60,6 +60,7 @@ Features
 - BND (v3): extraction from disk/memory to disk/memory, optionally decompress
     from DCX.
 - BHF (v3): extraction from disk/memory to disk/memory.
+- DAT (King's Field IV): extraction from disk/memory to disk/memory.
 
 Repacking is not supported, maybe one day. It is not that useful when using
 [UDSFM][udsfm] and [Yabber][yabber], but if you really need it you can check out
