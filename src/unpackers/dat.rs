@@ -8,11 +8,15 @@ use crate::formats::dat;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
 
+/// Extract DAT file contents to `output_path`.
+///
+/// Wraps around `extract_dat` to load the DAT from disk.
 pub fn extract_dat_file(dat_path: &str, output_path: &str) -> Result<(), UnpackError> {
     let (dat, dat_data) = load_dat_file(dat_path)?;
     extract_dat(&dat, dat_data, output_path)
 }
 
+/// Extract DAT contents to `output_path`.
 pub fn extract_dat(
     dat: &dat::Dat,
     dat_data: Vec<u8>,
@@ -29,6 +33,7 @@ pub fn extract_dat(
     Ok(())
 }
 
+/// Extract one `DatFileEntry`, preserving internal dir structure.
 fn extract_file(
     file_entry: &dat::DatFileEntry,
     data: &Vec<u8>,
@@ -54,11 +59,13 @@ fn extract_file(
     Ok(())
 }
 
+/// Load a DAT file from disk.
 pub fn load_dat_file(dat_path: &str) -> Result<(dat::Dat, Vec<u8>), UnpackError> {
     let dat_data = utils_fs::open_file_to_vec(path::Path::new(dat_path))?;
     Ok((load_dat(&dat_data)?, dat_data))
 }
 
+/// Load a DAT file from a bytes slice.
 pub fn load_dat(dat_data: &[u8]) -> Result<dat::Dat, UnpackError> {
     match dat::parse(&dat_data) {
         Ok((_, dat)) => Ok(dat),

@@ -5,7 +5,7 @@ use std::process;
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
-use ironring::{name_hashes, unpackers};
+use ironring::{name_hashes, repackers, unpackers};
 
 fn main() {
     let default_namefilepath: &str = &get_default_namefilepath();
@@ -94,19 +94,28 @@ fn main() {
             .arg(Arg::with_name("output")
                 .help("Output directory")
                 .short("o").long("output").takes_value(true).required(true)))
+        .subcommand(SubCommand::with_name("dat-pack")
+            .about("Pack files in a King's Field IV DAT")
+            .arg(Arg::with_name("files")
+                .help("Directory containing files to pack")
+                .takes_value(true).required(true))
+            .arg(Arg::with_name("output")
+                .help("Output file")
+                .takes_value(true).required(true)))
         .get_matches();
 
     process::exit(match matches.subcommand() {
-        ("bhd", Some(s)) => { cmd_bhd(s) }
-        ("bhds", Some(s)) => { cmd_bhds(s) }
-        ("hash", Some(s)) => { cmd_hash(s) }
-        ("dcx", Some(s)) => { cmd_dcx(s) }
-        ("bnd", Some(s)) => { cmd_bnd(s) }
-        ("bhf", Some(s)) => { cmd_bhf(s) }
-        ("paramdef", Some(s)) => { cmd_paramdef(s) }
-        ("param", Some(s)) => { cmd_param(s) }
-        ("dat", Some(s)) => { cmd_dat(s) }
-        _ => { 0 }
+        ("bhd", Some(s)) => cmd_bhd(s),
+        ("bhds", Some(s)) => cmd_bhds(s),
+        ("hash", Some(s)) => cmd_hash(s),
+        ("dcx", Some(s)) => cmd_dcx(s),
+        ("bnd", Some(s)) => cmd_bnd(s),
+        ("bhf", Some(s)) => cmd_bhf(s),
+        ("paramdef", Some(s)) => cmd_paramdef(s),
+        ("param", Some(s)) => cmd_param(s),
+        ("dat", Some(s)) => cmd_dat(s),
+        ("dat-pack", Some(s)) => cmd_dat_pack(s),
+        _ => 0,
     })
 }
 
@@ -254,6 +263,15 @@ fn cmd_dat(args: &ArgMatches) -> i32 {
     let output_path: &str = args.value_of("output").unwrap();
     match unpackers::dat::extract_dat_file(file_path, output_path) {
         Err(e) => { eprintln!("Failed to extract DAT: {:?}", e); 1 }
+        _ => 0
+    }
+}
+
+fn cmd_dat_pack(args: &ArgMatches) -> i32 {
+    let files_path: &str = args.value_of("files").unwrap();
+    let output_path: &str = args.value_of("output").unwrap();
+    match repackers::dat::pack_dat(files_path, output_path) {
+        Err(e) => { eprintln!("Failed to pack DAT: {:?}", e); 1 }
         _ => 0
     }
 }

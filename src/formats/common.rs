@@ -1,8 +1,14 @@
 use std::fmt;
+use std::io;
 
 use encoding_rs::SHIFT_JIS;
 use nom::IResult;
 use nom::bytes::complete::take_while;
+
+pub trait Pack {
+    /// Write the entirety of `self` as bytes to the write buffer `f`.
+    fn write(&self, f: &mut dyn io::Write) -> io::Result<usize>;
+}
 
 /// Parse a zero-terminated string from the slice.
 pub fn take_cstring(i: &[u8]) -> IResult<&[u8], &[u8]> {
