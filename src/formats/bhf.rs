@@ -4,8 +4,8 @@ use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
 
-use crate::parsers::bnd::{BinderOptions, format, use_be};
-use crate::parsers::common::{sjis_to_string, take_cstring};
+use crate::formats::bnd::{BinderOptions, format, use_be};
+use crate::formats::common::{sjis_to_string, take_cstring};
 
 #[derive(Debug)]
 pub struct BhfHeader {
@@ -22,10 +22,10 @@ pub struct BhfHeader {
 }
 
 impl BinderOptions for BhfHeader {
-    /// See `parsers::bnd::format` function.
+    /// See `formats::bnd::format` function.
     fn format(&self) -> u8 { format(self.endianness, self.raw_format) }
 
-    /// See `parsers::bnd::use_be` function.
+    /// See `formats::bnd::use_be` function.
     fn use_be(&self) -> bool { use_be(self.endianness, self.format()) }
 }
 

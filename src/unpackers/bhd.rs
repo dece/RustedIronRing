@@ -6,7 +6,7 @@ use std::path;
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
 use crate::name_hashes;
-use crate::parsers::bhd;
+use crate::formats::bhd;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
 

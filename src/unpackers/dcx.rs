@@ -5,7 +5,7 @@ use std::path;
 use flate2::read::ZlibDecoder;
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
-use crate::parsers::dcx;
+use crate::formats::dcx;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
 

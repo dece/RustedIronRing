@@ -4,7 +4,7 @@ use std::path;
 
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
-use crate::parsers::dat;
+use crate::formats::dat;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
 

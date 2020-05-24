@@ -6,8 +6,8 @@ use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
 
-use crate::parsers::common::{sjis_to_string, take_cstring, take_cstring_from, VarSizeInt};
-use crate::parsers::paramdef;
+use crate::formats::common::{sjis_to_string, take_cstring, take_cstring_from, VarSizeInt};
+use crate::formats::paramdef;
 use crate::utils::bin::{has_flag, mask};
 use crate::utils::str as utils_str;
 

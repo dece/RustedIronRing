@@ -3,7 +3,7 @@ use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
 
-use crate::parsers::common::take_cstring_from;
+use crate::formats::common::take_cstring_from;
 
 #[derive(Debug)]
 pub struct DatHeader {

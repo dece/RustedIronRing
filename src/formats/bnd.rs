@@ -5,7 +5,7 @@ use nom::number::complete::*;
 use nom::sequence::tuple;
 
 use crate::utils::bin::has_flag;
-use crate::parsers::common::{sjis_to_string, take_cstring};
+use crate::formats::common::{sjis_to_string, take_cstring};
 
 const FORMAT_BE: u8              = 0b00000001;
 const FORMAT_HAS_ID: u8          = 0b00000010;

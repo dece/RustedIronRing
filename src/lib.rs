@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 pub mod name_hashes;
-pub mod parsers {
+pub mod formats {
     pub mod bhd;
     pub mod bhf;
     pub mod bnd;

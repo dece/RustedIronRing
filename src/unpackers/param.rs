@@ -2,8 +2,8 @@ use std::path;
 
 use nom::Err::{Error as NomError, Failure as NomFailure};
 
-use crate::parsers::param;
-use crate::parsers::paramdef;
+use crate::formats::param;
+use crate::formats::paramdef;
 use crate::unpackers::errors::UnpackError;
 use crate::utils::fs as utils_fs;
 
