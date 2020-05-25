@@ -57,7 +57,7 @@ Features
 | DCX      | DS1   | Load, extract                            |
 | BND3     | DS1   | Load, extract                            |
 | BHF3     | DS1   | Load, extract                            |
-| DAT      | KF4   | Load, extract, repack (untested)         |
+| DAT      | KF4   | Load, extract, repack                    |
 | PARAMDEF | DS1   | Pretty-print                             |
 | PARAM    | DS1   | Pretty-print, optionally with a PARAMDEF |
 
