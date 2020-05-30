@@ -11,11 +11,11 @@ use crate::formats::paramdef;
 use crate::utils::bin::{has_flag, mask};
 use crate::utils::str as utils_str;
 
-const FLAGS2D_UNK1: u8          = 0b00000001;
-const FLAGS2D_32B_OFS_DATA: u8  = 0b00000010;
-const FLAGS2D_64B_OFS_DATA: u8  = 0b00000100;
-const FLAGS2D_OFS_STRING: u8    = 0b10000000;
-const FLAGS2E_UNICODE_NAMES: u8 = 0b00000001;
+const FLAGS2D_UNK1: u8           = 0b00000001;
+const FLAGS2D_32B_OFS_DATA: u8   = 0b00000010;
+const FLAGS2D_64B_OFS_DATA: u8   = 0b00000100;
+const FLAGS2D_OFS_STRING: u8     = 0b10000000;
+const _FLAGS2E_UNICODE_NAMES: u8 = 0b00000001;
 
 #[derive(Debug)]
 pub struct ParamHeader {
