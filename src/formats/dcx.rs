@@ -1,9 +1,20 @@
+//! DCX format.
+//!
+//! Support DFLT method only.
+
+use std::io;
+
 use nom::IResult;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::multi::count;
 use nom::number::complete::*;
 use nom::sequence::tuple;
+
+use crate::formats::common::Pack;
+
+pub const HEADER_MAGIC: &[u8] = b"DCX\0";
+pub const HEADER_SIZE: usize = 0x18;
 
 #[derive(Debug)]
 pub struct DcxHeader {
@@ -17,9 +28,24 @@ pub struct DcxHeader {
 
 fn parse_header(i: &[u8]) -> IResult<&[u8], DcxHeader> {
     let (i, (magic, unk04, ofs_dcs, ofs_dcp, unk10, unk14)) =
-        tuple((tag(b"DCX\0"), be_u32, be_u32, be_u32, be_u32, be_u32))(i)?;
+        tuple((tag(HEADER_MAGIC), be_u32, be_u32, be_u32, be_u32, be_u32))(i)?;
     Ok((i, DcxHeader { magic: magic.to_vec(), unk04, ofs_dcs, ofs_dcp, unk10, unk14 }))
 }
+
+impl Pack for DcxHeader {
+    fn write(&self, f: &mut dyn io::Write) -> io::Result<usize> {
+        f.write_all(&self.magic)?;
+        f.write_all(&self.unk04.to_be_bytes())?;
+        f.write_all(&self.ofs_dcs.to_be_bytes())?;
+        f.write_all(&self.ofs_dcp.to_be_bytes())?;
+        f.write_all(&self.unk10.to_be_bytes())?;
+        f.write_all(&self.unk14.to_be_bytes())?;
+        Ok(HEADER_SIZE)
+    }
+}
+
+pub const SIZES_CHUNK_MAGIC: &[u8] = b"DCS\0";
+pub const SIZES_CHUNK_SIZE: usize = 0xC;
 
 #[derive(Debug)]
 pub struct DcxSizes {
@@ -30,9 +56,21 @@ pub struct DcxSizes {
 
 fn parse_sizes(i: &[u8]) -> IResult<&[u8], DcxSizes> {
     let (i, (magic, uncompressed_size, compressed_size)) =
-        tuple((tag(b"DCS\0"), be_u32, be_u32))(i)?;
+        tuple((tag(SIZES_CHUNK_MAGIC), be_u32, be_u32))(i)?;
     Ok((i, DcxSizes { magic: magic.to_vec(), uncompressed_size, compressed_size }))
 }
+
+impl Pack for DcxSizes {
+    fn write(&self, f: &mut dyn io::Write) -> io::Result<usize> {
+        f.write_all(&self.magic)?;
+        f.write_all(&self.uncompressed_size.to_be_bytes())?;
+        f.write_all(&self.compressed_size.to_be_bytes())?;
+        Ok(SIZES_CHUNK_SIZE)
+    }
+}
+
+pub const PARAMS_CHUNK_MAGIC: &[u8] = b"DCP\0";
+pub const PARAMS_CHUNK_SIZE: usize = 0x32;
 
 #[derive(Debug)]
 pub struct DcxParams {
@@ -52,7 +90,7 @@ pub struct DcxParams {
 fn parse_params(i: &[u8]) -> IResult<&[u8], DcxParams> {
     let (i, (magic, method, ofs_dca, flags, unk10, unk14, unk18, unk1C)) =
         tuple((
-            tag(b"DCP\0"),
+            tag(PARAMS_CHUNK_MAGIC),
             alt((tag(b"DFLT"), tag(b"EDGE"), tag(b"KRAK"))),
             be_u32,
             count(be_u8, 4),
@@ -79,6 +117,26 @@ fn parse_params(i: &[u8]) -> IResult<&[u8], DcxParams> {
     ))
 }
 
+impl Pack for DcxParams {
+    fn write(&self, f: &mut dyn io::Write) -> io::Result<usize> {
+        f.write_all(&self.magic)?;
+        f.write_all(&self.method)?;
+        f.write_all(&self.ofs_dca.to_be_bytes())?;
+        f.write_all(&self.unk0C.to_be_bytes())?;
+        f.write_all(&self.unk0D.to_be_bytes())?;
+        f.write_all(&self.unk0E.to_be_bytes())?;
+        f.write_all(&self.unk0F.to_be_bytes())?;
+        f.write_all(&self.unk10.to_be_bytes())?;
+        f.write_all(&self.unk14.to_be_bytes())?;
+        f.write_all(&self.unk18.to_be_bytes())?;
+        f.write_all(&self.unk1C.to_be_bytes())?;
+        Ok(PARAMS_CHUNK_SIZE)
+    }
+}
+
+pub const ARCHIVE_CHUNK_MAGIC: &[u8] = b"DCA\0";
+pub const ARCHIVE_CHUNK_SIZE: usize = 0x8;
+
 #[derive(Debug)]
 pub struct DcxArchive {
     pub magic: Vec<u8>,
@@ -86,8 +144,16 @@ pub struct DcxArchive {
 }
 
 fn parse_archive(i: &[u8]) -> IResult<&[u8], DcxArchive> {
-    let (i, (magic, ofs_data)) = tuple((tag(b"DCA\0"), be_u32))(i)?;
+    let (i, (magic, ofs_data)) = tuple((tag(ARCHIVE_CHUNK_MAGIC), be_u32))(i)?;
     Ok((i, DcxArchive { magic: magic.to_vec(), ofs_data }))
+}
+
+impl Pack for DcxArchive {
+    fn write(&self, f: &mut dyn io::Write) -> io::Result<usize> {
+        f.write_all(&self.magic)?;
+        f.write_all(&self.ofs_data.to_be_bytes())?;
+        Ok(ARCHIVE_CHUNK_SIZE)
+    }
 }
 
 #[derive(Debug)]

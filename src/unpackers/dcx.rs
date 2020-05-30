@@ -36,10 +36,7 @@ fn decompress_dcx(dcx: &dcx::Dcx, comp_data: &[u8]) -> Result<Vec<u8>, UnpackErr
     if method == b"DFLT" {
         decompress_dcx_dflt(dcx, comp_data)
     } else {
-        let method_string = match std::str::from_utf8(method) {
-            Ok(s) => { String::from(s) }
-            Err(_) => { format!("{:?}", method) }
-        };
+        let method_string = String::from_utf8_lossy(method).to_string();
         Err(UnpackError::Compression(format!("Unknown method: {}", method_string)))
     }
 }

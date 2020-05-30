@@ -5,6 +5,7 @@ use encoding_rs::SHIFT_JIS;
 use nom::IResult;
 use nom::bytes::complete::take_while;
 
+/// Trait for structs that are easy to pack to bytes.
 pub trait Pack {
     /// Write the entirety of `self` as bytes to the write buffer `f`.
     fn write(&self, f: &mut dyn io::Write) -> io::Result<usize>;

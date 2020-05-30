@@ -1,9 +1,6 @@
 #![allow(non_snake_case)]
 
 pub mod name_hashes;
-pub mod repackers {
-    pub mod dat;
-}
 pub mod formats {
     pub mod bhd;
     pub mod bhf;
@@ -13,6 +10,11 @@ pub mod formats {
     pub mod dat;
     pub mod param;
     pub mod paramdef;
+}
+pub mod repackers {
+    pub mod dat;
+    pub mod dcx;
+    pub mod errors;
 }
 pub mod unpackers {
     pub mod bhd;

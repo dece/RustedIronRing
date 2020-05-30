@@ -4,11 +4,12 @@ Rusted Iron Ring
 Low-level library for exploring From Software games files.
 
 This project is mainly to play with the Rust language, Nom parser, FFI, etc; if
-you need an actually used and tested library, see [SoulsFormats][soulsformats].
-The main target has been Dark Souls 1 PTDE, but checkout the features section
-below.
+you need an actually used and tested library, see [SoulsFormats][soulsformats]
+(C#) or [soulstruct][soulstruct] (Python). The main target has been Dark Souls 1
+PTDE, but checkout the features section below.
 
 [soulsformats]: https://github.com/JKAnderson/SoulsFormats
+[soulstruct]: https://github.com/Grimrukh/soulstruct
 
 
 
@@ -54,7 +55,7 @@ Features
 | Type     | Games | Features                                 |
 |----------|-------|------------------------------------------|
 | BHD5/BDT | DS1   | Load, extract                            |
-| DCX      | DS1   | Load, extract                            |
+| DCX      | DS1   | Load, extract, repack (untested)         |
 | BND3     | DS1   | Load, extract                            |
 | BHF3     | DS1   | Load, extract                            |
 | DAT      | KF4   | Load, extract, repack                    |
@@ -77,6 +78,7 @@ check out [SiegLib][sieglib].
 - There is a demo Python binding for some `name_hashes` features in the
     `bindings/python` dir, that uses [PyO3][pyo3] and thus requires nightly
     rustc to build.
+- There are a few scripts useful for some testing/modding tasks.
 
 [pyo3]: https://pyo3.rs/
 

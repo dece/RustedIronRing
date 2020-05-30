@@ -18,17 +18,17 @@ pub struct DatHeader {
     pub num_files: u32,
 }
 
+fn parse_header(i: &[u8]) -> IResult<&[u8], DatHeader> {
+    let (i, (unk00, num_files)) = tuple((le_u32, le_u32))(i)?;
+    Ok((i, DatHeader { unk00, num_files }))
+}
+
 impl Pack for DatHeader {
     fn write(&self, f: &mut dyn io::Write) -> io::Result<usize> {
         f.write_all(&self.unk00.to_le_bytes())?;
         f.write_all(&self.num_files.to_le_bytes())?;
         Ok(0x8usize)
     }
-}
-
-fn parse_header(i: &[u8]) -> IResult<&[u8], DatHeader> {
-    let (i, (unk00, num_files)) = tuple((le_u32, le_u32))(i)?;
-    Ok((i, DatHeader { unk00, num_files }))
 }
 
 pub const FILE_ENTRY_SIZE: usize = 0x40;
@@ -42,6 +42,13 @@ pub struct DatFileEntry {
     pub ofs_data: u32,
 }
 
+fn parse_file_entry(i: &[u8]) -> IResult<&[u8], DatFileEntry> {
+    let (i, name) = take_cstring_from(i, FILE_ENTRY_NAME_MAXLEN)?;
+    let name = String::from_utf8_lossy(name).to_string();
+    let (i, (size, padded_size, ofs_data)) = tuple((le_u32, le_u32, le_u32))(i)?;
+    Ok((i, DatFileEntry { name, size, padded_size, ofs_data }))
+}
+
 impl Pack for DatFileEntry {
     fn write(&self, f: &mut dyn io::Write) -> io::Result<usize> {
         let name_bytes = self.name.as_bytes();
@@ -52,13 +59,6 @@ impl Pack for DatFileEntry {
         f.write_all(&self.ofs_data.to_le_bytes())?;
         Ok(FILE_ENTRY_SIZE)
     }
-}
-
-fn parse_file_entry(i: &[u8]) -> IResult<&[u8], DatFileEntry> {
-    let (i, name) = take_cstring_from(i, FILE_ENTRY_NAME_MAXLEN)?;
-    let name = String::from_utf8_lossy(name).to_string();
-    let (i, (size, padded_size, ofs_data)) = tuple((le_u32, le_u32, le_u32))(i)?;
-    Ok((i, DatFileEntry { name, size, padded_size, ofs_data }))
 }
 
 pub const INTERNAL_PATH_SEP: char = '/';
